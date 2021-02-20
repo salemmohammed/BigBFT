@@ -2,7 +2,7 @@
 
 A PlusCal specification of BigBFT consensus protocol.
 
-- Variables
+- Variables:
 Assig: name of the assignment phase messages
 Propose: name of the propose phase messages
 Voting: name of the voting phase messages
