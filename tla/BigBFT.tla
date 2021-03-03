@@ -2,7 +2,7 @@
 (*********************************************************************************)
 (* VERSION 1.0                                                                   *)
 (* This module is a specification for BigBFT algorithm.                          *)
-(* AUTHORS = " Salem Alqahtani                                *)
+(* AUTHOR = " Salem Alqahtani                                *)
 (*********************************************************************************)
  
 EXTENDS Integers, Sequences, FiniteSets, TLC
