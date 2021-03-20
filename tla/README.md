@@ -1,7 +1,6 @@
 -BigBFT in TLA+
 
--Overview
-This project is devoted to provide formal specification and verification using TLA+ for the BigBFT concensus protocol proposed in .....
+A PlusCal specification of BigBFT consensus protocol.
 
 Variables:
 
