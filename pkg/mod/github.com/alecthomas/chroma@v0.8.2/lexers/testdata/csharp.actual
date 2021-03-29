@@ -1,0 +1,13 @@
+DriveInfo[] drives = DriveInfo.GetDrives();
+foreach (DriveInfo drive in drives)
+{
+  IEnumerable<string> driveFolders =
+    Directory.EnumerateDirectories(drive.RootDirectory.ToString());
+
+  foreach (string dir in driveFolders)
+  {
+    Console.WriteLine(dir);
+  }
+}
+
+// Comment as last line should be recognised properly

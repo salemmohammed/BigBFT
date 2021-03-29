@@ -1,0 +1,161 @@
+#!/bin/bash
+set -eu
+
+examples_style="
+.source {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-gap: 1rem;
+}
+.org, .html {
+  border: 1px dashed grey;
+  padding: 1em;
+  overflow-x: auto;
+}
+.sections { margin-left: 2rem; }
+.sections a { display: block; padding: 0.25em 0; }
+.sections a:hover, .sections a:focus, .sections a:active { background: rgba(200, 200, 200, 0.2); }"
+
+org_files=org/testdata/*.org
+go_org_examples="
+<h1>Sections</h1>
+<style>$examples_style</style>
+<ul class='sections'>"
+for org_file in $org_files; do
+    name=$(basename $org_file)
+    go_org_examples+="<li><a id='toc-${name}' href='#${name}'>${name}</a>"
+done
+go_org_examples+="</ul><hr>"
+
+for org_file in $org_files; do
+    echo generating content for $org_file
+    name=$(basename $org_file)
+    go_org_examples+="
+      <h2><a id='${name}' href='#toc-${name}'>${name}</a></h2>
+      <div class='source'>
+        <pre class='org'>$(sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g;' $org_file)</pre>
+        <div class='html'>$(./go-org render $org_file html-chroma)</div>
+      </div>"
+done
+
+convert="
+  <h1>Convert</h1>
+  <button id='run' disabled='true' onclick='run()'>
+    RUN (initializing...)
+  </button>
+  or ctrl + return
+  <textarea id='input'>* Hello World</textarea>
+  <div id='output'></div>
+  <style>
+   #run {
+     background-color: #50CCDD;
+     border: none;
+     border-radius: 0.33em;
+     color: #FFF;
+     cursor: pointer;
+     font-weight: bold;
+     letter-spacing: 0.1em;
+     padding: 0.5em 1.5em;
+   }
+
+   #run:hover {
+     background-color: #40AACC;
+     outline: 0;
+   }
+
+   #run:disabled {
+     background-color: #AAA;
+     cursor: wait;
+   }
+
+   #input, #output {
+     display: block;
+     border: 1px dashed grey;
+     margin: 0.5em 0;
+     overflow: auto;
+     padding: 0.25em;
+     width: 100%;
+   }
+   #input { height: 30%; }
+   #output { max-height: 100%; }
+  </style>
+  <script src='wasm_exec.js'></script>
+  <script>
+   const go = new Go();
+   WebAssembly
+     .instantiateStreaming(fetch('main.wasm'), go.importObject)
+     .then((result) => go.run(result.instance),
+           (error) => {
+             const button = document.getElementById('run');
+             button.textContent = 'ERROR: (' + error + ')';
+           });
+
+   function initialized() {
+     const button = document.getElementById('run');
+     button.textContent = 'RUN';
+     button.removeAttribute('disabled');
+   }
+
+   document.getElementById('input').addEventListener('keydown', function(e) {
+   if (e.keyCode == 13 && e.ctrlKey) { // ctrl+enter
+       run();
+       e.preventDefault();
+     }
+   }, false)
+  </script>"
+
+index="<html>
+  <head>
+    <style>$(cat etc/style.css)</style>
+  </head>
+  <body>
+  $convert
+  $go_org_examples
+  </body>
+</html>"
+
+
+convert="<html>
+  <head>
+    <style>$(cat etc/style.css)</style>
+  </head>
+  <body>
+  $convert
+  </body>
+</html>"
+
+mkdir -p docs
+go get github.com/chaseadamsio/goorgeous
+cp etc/_goorgeous.go docs/goorgeous.go
+go build -o docs/goorgeous docs/goorgeous.go
+go_org_vs_goorgeous_examples="<html>
+  <head>
+    <style>
+     $(cat etc/style.css)
+     $examples_style
+  </style>
+  </head>
+  <body>"
+for org_file in $org_files; do
+    echo generating content for $org_file
+    name=$(basename $org_file)
+    go_org_vs_goorgeous_examples+="
+      <h2><a id='${name}' href='#toc-${name}'>${name}</a></h2>
+      <div class='source'>
+        <div class='html'>$(./docs/goorgeous $org_file)</div>
+        <div class='html'>$(./go-org render $org_file html-chroma)</div>
+      </div>"
+done
+go_org_vs_goorgeous_examples+="</body></html>"
+rm docs/goorgeous docs/goorgeous.go
+
+echo "$index" > docs/index.html
+echo "$convert" > docs/convert.html
+echo "$go_org_vs_goorgeous_examples" > docs/go-org-vs-goorgeous.html
+cp etc/_wasm.go docs/wasm.go
+GOOS=js GOARCH=wasm go build -o docs/main.wasm docs/wasm.go
+rm docs/wasm.go
+cp $(go env GOROOT)/misc/wasm/wasm_exec.js docs/wasm_exec.js
+
+mkdir -p docs/blorg
+cp -r blorg/testdata/public/* docs/blorg/

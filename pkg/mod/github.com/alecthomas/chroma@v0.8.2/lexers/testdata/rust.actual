@@ -1,0 +1,23 @@
+#[derive(Debug)]
+struct Rectangle {
+    width: u32,
+    height: u32,
+}
+
+async fn alignof() {}
+
+fn main() {
+    let rect1 = Rectangle { width: 30, height: 50 };
+
+    // Some comment
+    println!("rect1 is {:?}", rect1);
+
+    let r#type = "valid";
+    let i: i128 = 1117;
+
+    let s = "March
+April";
+    let s = r"March
+April";
+
+}

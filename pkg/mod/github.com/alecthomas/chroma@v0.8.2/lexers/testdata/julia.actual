@@ -1,0 +1,18 @@
+% Defining basic types
+
+struct Value
+    v::Int
+end
+const r = 33
+
+A = zeros(3,3)
+B = rand(4,3)
+
+type = typeof(B)
+C = A * B'
+res = C' .+ r
+
+const abstract = 33
+abstract type K end
+
+primitive type MyFloat32 32 end

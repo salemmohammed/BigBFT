@@ -1,0 +1,6 @@
+#+TITLE: About
+#+TAGS[]: static
+
+This site is generated from [[https://github.com/niklasfasching/go-org/tree/master/blorg/testdata/content][go-org/blorg/testdata/content]] using the configuration in [[https://github.com/niklasfasching/go-org/blob/master/blorg/testdata/blorg.org][blorg.org]]
+
+#+INCLUDE: "../blorg.org" src org

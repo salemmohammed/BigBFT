@@ -1,0 +1,390 @@
+<!-- This is a simple playground to try out esbuild in your browser -->
+<html>
+
+<head>
+  <meta charset="utf8">
+  <title>Try esbuild live</title>
+  <style>
+    body {
+      font: 15px/120% sans-serif;
+      overflow: hidden;
+    }
+
+    h2,
+    p {
+      cursor: default;
+      user-select: none;
+    }
+
+    textarea {
+      resize: none;
+      width: 100%;
+      height: 100%;
+    }
+
+    textarea,
+    #output .outer {
+      box-sizing: border-box;
+      padding: 4px;
+      color: inherit;
+      font-size: 13px;
+      line-height: 110%;
+      font-family: monospace;
+      cursor: text;
+      tab-size: 2;
+    }
+
+    #output .outer {
+      white-space: pre-wrap;
+      overflow-y: auto;
+    }
+
+    .minified {
+      word-break: break-all;
+    }
+
+    textarea:focus {
+      outline: none;
+      border: 1px solid #999;
+    }
+
+    hr {
+      border: 1px solid #999;
+      margin: 1em 0;
+    }
+
+    section {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      padding: 0 20px;
+      box-sizing: border-box;
+    }
+
+    section p {
+      line-height: 26px;
+    }
+
+    #input {
+      left: 0;
+      width: 50%;
+    }
+
+    #output {
+      right: 0;
+      width: 50%;
+    }
+
+    .outer {
+      position: absolute;
+      left: 20px;
+      top: 120px;
+      right: 20px;
+      bottom: 20px;
+    }
+
+    #input .outer {
+      right: 10px;
+    }
+
+    #output .outer {
+      left: 10px;
+    }
+
+    label {
+      white-space: nowrap;
+    }
+
+    .terminal-error {
+      font-weight: bold;
+      color: #D00;
+    }
+
+    .terminal-underline {
+      font-weight: bold;
+      color: #0D0;
+    }
+
+    .terminal-warning {
+      font-weight: bold;
+      color: #D0D;
+    }
+
+    .terminal-note {
+      font-weight: bold;
+    }
+
+    body {
+      background: #EEE;
+      color: #333;
+    }
+
+    textarea,
+    #output .outer {
+      background: #FFF;
+      border: 1px solid #CCC;
+    }
+
+    .terminal-subtle {
+      color: #777;
+    }
+
+    .terminal-bold {
+      font-weight: bold;
+      color: #000;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      body {
+        background: #333;
+        color: #DDD;
+      }
+
+      textarea,
+      #output .outer {
+        background: #111;
+        border: 1px solid #555;
+      }
+
+      .terminal-subtle {
+        color: #999;
+      }
+
+      .terminal-bold {
+        color: #FFF;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <section id="input">
+    <h2>Input</h2>
+    <p>
+      <label for="target">
+        Target: <select id="target">
+          <option>ES5</option>
+          <option>ES2015</option>
+          <option>ES2016</option>
+          <option>ES2017</option>
+          <option>ES2018</option>
+          <option>ES2019</option>
+          <option>ES2020</option>
+          <option selected>ESNext</option>
+        </select>
+      </label>
+      &nbsp; &nbsp;
+      <label for="loader">
+        Loader: <select id="loader">
+          <option selected>JS</option>
+          <option>JSX</option>
+          <option>TS</option>
+          <option>TSX</option>
+          <option>CSS</option>
+          <option>JSON</option>
+          <option>Text</option>
+          <option>Base64</option>
+          <option>DataURL</option>
+          <option>Binary</option>
+        </select>
+      </label>
+      &nbsp; &nbsp;
+      <label for="format">
+        Format: <select id="format">
+          <option selected>Preserve</option>
+          <option>IIFE</option>
+          <option>CJS</option>
+          <option>ESM</option>
+        </select>
+      </label>
+      <br>
+      <label for="ascii">
+        <input id="ascii" type="checkbox">
+        ASCII
+      </label>
+      &nbsp; &nbsp;
+      <label for="keepNames">
+        <input id="keepNames" type="checkbox">
+        Keep Names
+      </label>
+      &nbsp; &nbsp;
+      Minify:
+      <label for="minify-syntax"><input id="minify-syntax" type="checkbox"> Syntax</label>
+      <label for="minify-idents"><input id="minify-idents" type="checkbox"> Identifiers</label>
+      <label for="minify-spaces"><input id="minify-spaces" type="checkbox"> Whitespace</label>
+    </p>
+    <div class="outer"><textarea autofocus spellcheck="false"></textarea></div>
+  </section>
+  <section id="output">
+    <h2>Output</h2>
+    <div class="outer"></div>
+  </section>
+  <script src="../npm/esbuild-wasm/lib/browser.js"></script>
+  <script>
+    const input = document.querySelector('#input textarea')
+    const target = document.querySelector('#target')
+    const loader = document.querySelector('#loader')
+    const format = document.querySelector('#format')
+    const minifySyntax = document.querySelector('#minify-syntax')
+    const minifyIdents = document.querySelector('#minify-idents')
+    const minifySpaces = document.querySelector('#minify-spaces')
+    const ascii = document.querySelector('#ascii')
+    const keepNames = document.querySelector('#keepNames')
+    let runIfIdle
+
+    function persistValue(el, key) {
+      el.onchange = () => {
+        runIfIdle()
+        try {
+          sessionStorage.setItem(key, el.value)
+        } catch (e) {
+        }
+      }
+      try {
+        const old = sessionStorage.getItem(key)
+        if (old !== null) el.value = old
+      } catch (e) {
+      }
+    }
+
+    function persistChecked(el, key) {
+      el.onchange = () => {
+        runIfIdle()
+        try {
+          sessionStorage.setItem(key, el.checked)
+        } catch (e) {
+        }
+      }
+      try {
+        const old = sessionStorage.getItem(key)
+        if (old !== null) el.checked = old === 'true'
+      } catch (e) {
+      }
+    }
+
+    persistValue(target, 'target')
+    persistValue(loader, 'loader')
+    persistValue(format, 'format')
+    persistChecked(minifySyntax, 'minifySyntax')
+    persistChecked(minifyIdents, 'minifyIdents')
+    persistChecked(minifySpaces, 'minifySpaces')
+    persistChecked(ascii, 'ascii')
+    persistChecked(keepNames, 'keepNames')
+
+    try {
+      const old = sessionStorage.getItem('input')
+      if (old !== null) input.value = old
+    } catch (e) {
+    }
+
+    esbuild.startService({
+      wasmURL: '../npm/esbuild-wasm/esbuild.wasm',
+    }).then(service => {
+      const output = document.querySelector('#output .outer')
+      let debounceTimeout = 0
+      let isRunning = false
+      let needsRun = false
+
+      input.oninput = () => {
+        clearTimeout(debounceTimeout)
+        debounceTimeout = setTimeout(runIfIdle, 50)
+      }
+
+      runIfIdle = () => {
+        clearTimeout(debounceTimeout)
+
+        if (isRunning) {
+          needsRun = true
+          return
+        }
+
+        isRunning = true
+        needsRun = false
+
+        service.transform(input.value, {
+          target: target.value.toLowerCase(),
+          loader: loader.value.toLowerCase(),
+          format: format.value === 'Preserve' ? void 0 : format.value.toLowerCase(),
+          minifySyntax: minifySyntax.checked,
+          minifyIdentifiers: minifyIdents.checked,
+          minifyWhitespace: minifySpaces.checked,
+          charset: ascii.checked ? 'ascii' : 'utf8',
+          keepNames: keepNames.checked,
+        }).then(({ code, warnings }) => {
+          let html = messagesToHTML(addKindToMessages(warnings, 'warning'))
+          code = textToHTML(code);
+          if (minifySpaces.checked) code = `<span class="minified">${code}</span>`;
+          output.innerHTML = (html && html + '<hr>') + code;
+        }, error => {
+          let { errors, warnings } = error
+          if (errors && warnings) output.innerHTML = messagesToHTML(
+            addKindToMessages(errors, 'error').concat(addKindToMessages(warnings, 'warning')));
+          else output.textContent = (error && error.message) || (error + '')
+        }).then(() => {
+          isRunning = false
+          if (needsRun) runIfIdle()
+        })
+
+        try {
+          sessionStorage.setItem('input', input.value)
+        } catch (e) {
+        }
+      }
+
+      function textToHTML(text) {
+        return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      }
+
+      function renderTabs(text) {
+        let result = ''
+        for (let c of text) {
+          if (c === '\t') result += ' '.repeat(8 - result.length % 8)
+          else result += c
+        }
+        return result
+      }
+
+      function addKindToMessages(messages, kind) {
+        return messages.map(msg => ({ ...msg, kind }))
+      }
+
+      function renderMessage(indent, text, location, kind) {
+        let spaces = ' '.repeat(indent.length + 2)
+        let html = ''
+        if (kind !== 'note') html += `<span class="terminal-bold">`
+        html += indent
+        if (location) {
+          html += `${textToHTML(location.file)}:${location.line}:${location.column}: `
+        }
+        html += `<span class="terminal-${kind}">${kind}: </span>`
+        html += textToHTML(text)
+        if (kind !== 'note') html += `</span>`
+        html += `<br>`
+        if (location) {
+          let indent = renderTabs(location.lineText.slice(0, location.column)).length
+          let length = renderTabs(location.lineText.slice(0, location.column + location.length)).length - indent
+          let underline = length > 1 ? '~'.repeat(length) : '^'
+          let line = renderTabs(location.lineText)
+          html += `${spaces}<span class="terminal-subtle">${textToHTML(line.slice(0, indent))}</span>`
+          html += `<span class="terminal-underline">${line.slice(indent, indent + length)}</span>`
+          html += `<span class="terminal-subtle">${textToHTML(line.slice(indent + length))}</span>`
+          html += `<br>${spaces}<span class="terminal-underline">${' '.repeat(indent)}${underline}</span><br>`
+        }
+        return html
+      }
+
+      function messagesToHTML(messages) {
+        return messages.sort((a, b) => {
+          let al = a.location, bl = b.location
+          return al && bl && (al.line - bl.line || al.column - bl.column) || (a.text < b.text) - (a.text > b.text)
+        }).map(({ text, location, kind, notes }) => {
+          return renderMessage(' &gt; ', text, location, kind) + notes.map(({ text, location }) => renderMessage('   ', text, location, 'note')) + `<br>`
+        }).join('');
+      }
+
+      runIfIdle()
+    })
+  </script>
+</body>
+
+</html>

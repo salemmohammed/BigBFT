@@ -1,0 +1,10 @@
+{{/*
+  This is a multiline comment
+*/}}
+
+{{ $myVar := 2 }}
+{{ $myVar = 4 }}
+
+{{ range $idx, $value := $variable }}
+Hello {{ $idx }}
+{{ end }}

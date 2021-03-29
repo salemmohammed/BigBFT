@@ -1,0 +1,161 @@
+#+RESULTS:
+: some results without a block
+
+#+CAPTION: block caption
+#+BEGIN_SRC bash :results raw
+echo "a bash source block"
+
+function hello {
+    echo Hello World!
+}
+
+hello
+#+END_SRC
+
+#+BEGIN_SRC
+a source block without a language
+#+END_SRC
+
+
+#+BEGIN_SRC bash
+echo a source block with results
+#+END_SRC
+
+#+RESULTS:
+: a source block with results
+
+#+BEGIN_SRC bash :exports none
+echo a source block with results that is not exported
+#+END_SRC
+
+#+RESULTS:
+: a source block with results that is not exported
+
+#+BEGIN_SRC bash :exports results
+echo a source block that only exports results
+#+END_SRC
+
+#+RESULTS:
+: a source block that only exports results
+
+#+BEGIN_EXAMPLE foo bar baz
+an example block with
+multiple lines including
+
+
+empty lines!
+
+it also has multiple parameters
+
+src, example & export blocks treat their content as raw text
+/inline/ *markup* is ignored
+      and whitespace is honored and not removed
+
+content of example blocks is still html escaped - see <script>alert("escaped")</script>
+#+END_EXAMPLE
+
+: examples like this
+: are also supported
+:
+: note that /inline/ *markup* ignored
+
+#+BEGIN_QUOTE
+Mongodb is *webscale*. (source: [[http://www.mongodb-is-web-scale.com/][mongodb-is-web-scale]])
+
+blocks like the quote block parse their content and can contain
+- lists
+- inline /markup/
+- tables
+  | foo |
+  | bar |
+  | baz |
+- paragraphs
+- ...
+
+      whitespace is honored and not removed (but is not displayed because that's how html works by default)
+        it can be made visible using css (e.g. =white-space: pre=).
+#+END_QUOTE
+
+#+BEGIN_SRC org
+  ,#+BEGIN_SRC bash
+  echo src (with language org) and example blocks support escaping using commata
+  ,#+END_SRC
+
+,,* I am not a real headline - commata escape characters aren't renderered
+
+#+END_SRC
+
+#+BEGIN_EXAMPLE
+  ,#+BEGIN_SRC bash
+  echo src (with language org) and example blocks support escaping using commata
+  ,#+END_SRC
+
+,,* I am not a real headline - commata escape characters aren't renderered
+#+END_EXAMPLE
+
+#+BEGIN_EXPORT html
+<script>
+console.log("Hello World!")
+</script>
+#+END_EXPORT
+
+#+BEGIN_EXPORT something-other-than-html
+I won't be rendered as html
+#+END_EXPORT
+
+
+- list item 1
+  blocks can contain unindented lines that would normally end a list item
+  #+BEGIN_EXAMPLE
+  this line is not indented - if it was outside of a block the list item would end
+  #+END_EXAMPLE
+  #+BEGIN_QUOTE
+  this line is not indented - if it was outside of a block the list item would end
+  #+END_QUOTE
+  now we're outside the block again and the following unindented line will be outside of the list item
+this unindented line is outside of the list item
+- list item 2
+  #+BEGIN_SRC
+  #+BEGIN_EXAMPLE
+  #+END_SRC
+  #+END_EXAMPLE
+
+  #+BEGIN_QUOTE
+  #+BEGIN_EXAMPLE
+  ,#+END_QUOTE
+  #+END_EXAMPLE
+  #+END_QUOTE
+
+- verse blocks
+  - emacs / ox-hugo rendering
+    #+BEGIN_EXPORT html
+    <p class="verse">
+    Great clouds overhead<br />
+    Tiny black birds rise and fall<br />
+    Snow covers Emacs<br />
+    <br />
+    &nbsp;&nbsp;&nbsp;---AlexSchroeder<br />
+    </p>
+    #+END_EXPORT
+  - go-org rendering
+    #+BEGIN_SRC html
+    <style>
+    .verse-block p { white-space: pre; }
+    .verse-block p + p { margin: 0; }
+    </style>
+    #+END_SRC
+
+    #+BEGIN_EXPORT html
+    <style>
+    .verse-block p { white-space: pre; }
+    .verse-block p + p { margin: 0; }
+    </style>
+    #+END_EXPORT
+
+    #+BEGIN_VERSE
+    Great clouds overhead
+    Tiny black birds rise and fall
+    Snow covers Emacs
+
+        ---AlexSchroeder
+    #+END_VERSE
