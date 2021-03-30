@@ -73,7 +73,7 @@ func DefaultBConfig() Bconfig {
 type Benchmark struct {
 	db DB // read/write operation interface
 	Bconfig
-	*History
+	//*History
 
 	rate      *Limiter
 	latency   []time.Duration // latency per operation
@@ -90,7 +90,7 @@ func NewBenchmark(db DB) *Benchmark {
 	b := new(Benchmark)
 	b.db = db
 	b.Bconfig = config.Benchmark
-	b.History = NewHistory()
+	//b.History = NewHistory()
 	if b.Throttle > 0 {
 		b.rate = NewLimiter(b.Throttle)
 	}
@@ -191,18 +191,7 @@ func (b *Benchmark) Run() {
 	log.Info(stat)
 
 	stat.WriteFile("latency")
-	b.History.WriteFile("history")
-
-	if b.LinearizabilityCheck {
-		n := b.History.Linearizable()
-		if n == 0 {
-			log.Info("The execution is linearizable.")
-		} else {
-			log.Info("The execution is NOT linearizable.")
-			log.Infof("Total anomaly read operations are %d", n)
-			log.Infof("Anomaly percentage is %f", float64(n)/float64(stat.Size))
-		}
-	}
+	//b.History.WriteFile("history")
 }
 
 // generates key based on distribution
@@ -278,7 +267,6 @@ func (b *Benchmark) worker(keys <-chan int, result chan<- time.Duration) {
 			op.end = math.MaxInt64
 			log.Error(err)
 		}
-		b.History.AddOperation(k, op)
 	}
 }
 

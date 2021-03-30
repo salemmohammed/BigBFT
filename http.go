@@ -1,68 +1,164 @@
 package BigBFT
 
 import (
+	"encoding/json"
 	"github.com/salemmohammed/BigBFT/log"
-	//"bytes"
-	"encoding/gob"
-	"fmt"
-	"net"
-	"os"
+	"io"
+	"io/ioutil"
+	"net/http"
+	"net/url"
+	"strconv"
+	"time"
 )
-// Client holds info about connection
-type Clients struct {
-	conn   net.Conn
-	Server *server
-}
-type server struct {
-	address string
-	conn   net.Conn
-}
+
+// http request header names
+const (
+	HTTPClientID  = "Id"
+	HTTPCommandID = "Cid"
+	HTTPTimestamp = "Timestamp"
+	HTTPNodeID    = "Id"
+)
 
 // serve serves the http REST API request from clients
 func (n *node) http() {
-	log.Debugf("In http() : %v", config.Addrs[n.id])
-	n.server = &server{
-		address: config.Addrs[n.id],
-	}
-	log.Info("The server starting on ", n.server.address)
-	// Listen for incoming connections.
-	ln, err := net.Listen("tcp", n.server.address)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", n.handleRoot)
+	mux.HandleFunc("/history", n.handleHistory)
+	mux.HandleFunc("/crash", n.handleCrash)
+	mux.HandleFunc("/drop", n.handleDrop)
+	// http string should be in form of ":8080"
+	url, err := url.Parse(config.HTTPAddrs[n.id])
 	if err != nil {
-		fmt.Println("Error listening:", err.Error())
-		os.Exit(1)
+		log.Fatal("http url parse error: ", err)
 	}
-	// Close the listener when the application closes.
-	defer ln.Close()
-	fmt.Println("Listening on", n.server.address)
-	for {
-		// Listen for an incoming connection.
-		conn, err := ln.Accept()
-		if err != nil {
-			log.Fatal("tcp server accept error", err)
-		}else{
-			n.server.conn = conn
-			// Handle connections in a new goroutine.
-			go n.handleRequest(n.server.conn)
+	port := ":" + url.Port()
+	n.server = &http.Server{
+		Addr:    port,
+		Handler: mux,
+	}
+	log.Info("http server starting on ", port)
+	log.Fatal(n.server.ListenAndServe())
+}
+
+func (n *node) handleRoot(w http.ResponseWriter, r *http.Request) {
+	log.Debugf("\n\n\n")
+	log.Debugf("<------------handleRoot---------->")
+	var req Request
+	var cmd Command
+	var err error
+
+	// get all http headers
+	req.Properties = make(map[string]string)
+	for k := range r.Header {
+		if k == HTTPClientID {
+			cmd.ClientID = ID(r.Header.Get(HTTPClientID))
+			continue
 		}
+		if k == HTTPCommandID {
+			cmd.CommandID, err = strconv.Atoi(r.Header.Get(HTTPCommandID))
+			if err != nil {
+				log.Error(err)
+			}
+			continue
+		}
+		req.Properties[k] = r.Header.Get(k)
+	}
+
+	// get command key and value
+	if len(r.URL.Path) > 1 {
+		i, err := strconv.Atoi(r.URL.Path[1:])
+		if err != nil {
+			http.Error(w, "invalid path", http.StatusBadRequest)
+			log.Error(err)
+			return
+		}
+		cmd.Key = Key(i)
+		if r.Method == http.MethodPut || r.Method == http.MethodPost {
+			body, err := ioutil.ReadAll(r.Body)
+			if err != nil {
+				log.Error("error reading body: ", err)
+				http.Error(w, "cannot read body", http.StatusBadRequest)
+				return
+			}
+			cmd.Value = Value(body)
+		}
+	} else {
+		body, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			log.Error("error reading body: ", err)
+			http.Error(w, "cannot read body", http.StatusBadRequest)
+			return
+		}
+		json.Unmarshal(body, &cmd)
+	}
+
+	req.Command = cmd
+	req.Timestamp = time.Now().UnixNano()
+	req.NodeID = n.id // TODO does this work when forward twice
+	req.c = make(chan Reply, 1)
+
+	log.Debugf("I am in http file %v ",req.Command)
+	n.MessageChan <- req
+
+	reply := <-req.c
+	if reply.Err != nil {
+		http.Error(w, reply.Err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// set all http headers
+	w.Header().Set(HTTPClientID, string(reply.Command.ClientID))
+	w.Header().Set(HTTPCommandID, strconv.Itoa(reply.Command.CommandID))
+	for k, v := range reply.Properties {
+		w.Header().Set(k, v)
+	}
+
+	_, err = io.WriteString(w, string(reply.Value))
+	if err != nil {
+		log.Error(err)
+	}
+	log.Debugf("<------- done from http -------> ")
+}
+
+func (n *node) handleHistory(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set(HTTPNodeID, string(n.id))
+	k, err := strconv.Atoi(r.URL.Query().Get("key"))
+	if err != nil {
+		log.Error(err)
+		http.Error(w, "invalide key", http.StatusBadRequest)
+		return
+	}
+	h := n.Database.History(Key(k))
+	b, _ := json.Marshal(h)
+	_, err = w.Write(b)
+	if err != nil {
+		log.Error(err)
 	}
 }
-// Handles incoming requests.
-func (n *node) handleRequest(conn net.Conn) {
 
-	var req Request
-	var err error
-	log.Debugf("Server is Read client data from channel")
-	dec := gob.NewDecoder(conn)
-	err = dec.Decode(&req)
+func (n *node) handleCrash(w http.ResponseWriter, r *http.Request) {
+	t, err := strconv.Atoi(r.URL.Query().Get("t"))
 	if err != nil {
-		panic(err)
+		log.Error(err)
+		http.Error(w, "invalide time", http.StatusBadRequest)
+		return
 	}
-	// lets print out!
-	fmt.Println(req) // reflects.TypeOf(tmpstruct) == Message{}
-	log.Debugf("Before sending Request on the channel n.MessageChan %v", req)
-	n.MessageChan <- req
-	log.Debugf("After sending Request on the channel n.MessageChan %v", req)
-	reply := <-req.c
-	req.Done <- true
-	fmt.Println("Reply: %v", reply)
+	n.Socket.Crash(t)
+	// timer := time.NewTimer(time.Duration(t) * time.Second)
+	// go func() {
+	// 	n.server.Close()
+	// 	<-timer.C
+	// 	log.Error(n.server.ListenAndServe())
+	// }()
+}
+
+func (n *node) handleDrop(w http.ResponseWriter, r *http.Request) {
+	id := r.URL.Query().Get("id")
+	t, err := strconv.Atoi(r.URL.Query().Get("t"))
+	if err != nil {
+		log.Error(err)
+		http.Error(w, "invalide time", http.StatusBadRequest)
+		return
+	}
+	n.Drop(ID(id), t)
 }

@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/salemmohammed/BigBFT"
-	"github.com/salemmohammed/BigBFT/paxos"
+	//"github.com/salemmohammed/BigBFT/paxos"
 )
 
 var id = flag.String("id", "", "node id this client connects to")

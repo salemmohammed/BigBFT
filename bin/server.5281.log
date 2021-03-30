@@ -1,0 +1,9 @@
+[INFO] 2021/03/29 22:30:34.527571 server.go:16: node 1.1 starting...
+[DEBUG] 2021/03/29 22:30:34.527739 transport.go:48: url:tcp://127.0.0.1:1736
+[DEBUG] 2021/03/29 22:30:34.527769 transport.go:55: uri.Scheme:tcp
+[DEBUG] 2021/03/29 22:30:34.527785 transport.go:134: start listening 1736
+[INFO] 2021/03/29 22:30:34.528086 node.go:69: node 1.1 start running
+[INFO] 2021/03/29 22:30:34.528120 http.go:39: http server starting on :1736
+[ERROR] 2021/03/29 22:30:34.528176 http.go:40: listen tcp :1736: bind: address already in use
+[DEBUG] 2021/03/29 22:30:34.528182 node.go:105: salem in handle
+[DEBUG] 2021/03/29 22:30:34.528215 transport.go:89: t.recv 

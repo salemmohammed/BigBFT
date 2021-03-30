@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"sync"
 	"github.com/salemmohammed/BigBFT"
 	"github.com/salemmohammed/BigBFT/log"
 	"github.com/salemmohammed/BigBFT/paxos"
