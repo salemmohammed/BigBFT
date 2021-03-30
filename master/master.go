@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"Blockchain"
+	"github.com/salemmohammed/BigBFT"
 )
 
 var port = flag.Int("port", 1735, "master port number")
@@ -24,16 +24,16 @@ func main() {
 
 	log.Println("Master server starting...")
 
-	in := make(chan Blockchain.Register)
-	out := make(chan Blockchain.Config)
+	in := make(chan BigBFT.Register)
+	out := make(chan BigBFT.Config)
 
-	config := Blockchain.MakeDefaultConfig()
+	config := BigBFT.MakeDefaultConfig()
 	config.Threshold = *threshold
 	config.Thrifty = *thrifty
 
 	go func() {
-		addrs := make(map[Blockchain.ID]string, *n)
-		http := make(map[Blockchain.ID]string, *n)
+		addrs := make(map[BigBFT.ID]string, *n)
+		http := make(map[BigBFT.ID]string, *n)
 		for i := 0; i < *n; i++ {
 			msg := <-in
 			id := msg.ID
@@ -65,14 +65,14 @@ func main() {
 		go func(conn net.Conn) {
 			decoder := gob.NewDecoder(conn)
 			encoder := gob.NewEncoder(conn)
-			var msg Blockchain.Register
+			var msg BigBFT.Register
 			err := decoder.Decode(&msg)
 			if err != nil {
 				log.Panicln(err)
 				conn.Close()
 				return
 			}
-			var c Blockchain.Config
+			var c BigBFT.Config
 			if !msg.Client {
 				msg.Addr = strings.Split(conn.RemoteAddr().String(), ":")[0]
 				log.Printf("Node %s address %s\n", msg.ID, msg.Addr)

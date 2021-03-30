@@ -3,9 +3,9 @@ package paxos
 import (
 	"testing"
 
-	"github.com/ailidani/paxi"
+	"github.com/salemmohammed/BigBFT"
 )
 
 func TestPaxos(t *testing.T) {
-	paxi.Simulation()
+	BigBFT.Simulation()
 }

@@ -3,28 +3,28 @@ package paxos
 import (
 	"strconv"
 
-	"github.com/ailidani/paxi"
-	"github.com/ailidani/paxi/log"
+	"github.com/salemmohammed/BigBFT"
+	"github.com/salemmohammed/BigBFT/log"
 )
 
 // Client overwrites read operation for Paxos
 type Client struct {
-	*paxi.HTTPClient
-	ballot paxi.Ballot
+	*BigBFT.HTTPClient
+	ballot BigBFT.Ballot
 }
 
-func NewClient(id paxi.ID) *Client {
+func NewClient(id BigBFT.ID) *Client {
 	return &Client{
-		HTTPClient: paxi.NewHTTPClient(id),
+		HTTPClient: BigBFT.NewHTTPClient(id),
 	}
 }
 
-// Get implements paxi.Client interface
+// Get implements BigBFT.Client interface
 // there are three reading modes:
 // (1) read as normal command
 // (2) read from leader with current ballot number
 // (3) read from quorum of replicas with barrier
-func (c *Client) Get(key paxi.Key) (paxi.Value, error) {
+func (c *Client) Get(key BigBFT.Key) (BigBFT.Value, error) {
 	c.HTTPClient.CID++
 	switch *read {
 	case "leader":
@@ -38,11 +38,11 @@ func (c *Client) Get(key paxi.Key) (paxi.Value, error) {
 	}
 }
 
-func (c *Client) Put(key paxi.Key, value paxi.Value) error {
+func (c *Client) Put(key BigBFT.Key, value BigBFT.Value) error {
 	c.HTTPClient.CID++
 	_, meta, err := c.RESTPut(c.ID, key, value)
 	if err == nil {
-		b := paxi.NewBallotFromString(meta[HTTPHeaderBallot])
+		b := BigBFT.NewBallotFromString(meta[HTTPHeaderBallot])
 		if b > c.ballot {
 			c.ballot = b
 		}
@@ -51,27 +51,27 @@ func (c *Client) Put(key paxi.Key, value paxi.Value) error {
 	return err
 }
 
-func (c *Client) readLeader(key paxi.Key) (paxi.Value, error) {
+func (c *Client) readLeader(key BigBFT.Key) (BigBFT.Value, error) {
 	if c.ballot == 0 {
 		v, meta, err := c.HTTPClient.RESTGet(c.ID, key)
-		c.ballot = paxi.NewBallotFromString(meta[HTTPHeaderBallot])
+		c.ballot = BigBFT.NewBallotFromString(meta[HTTPHeaderBallot])
 		return v, err
 	}
 	// check ballot number
 	v, meta, err := c.HTTPClient.RESTGet(c.ballot.ID(), key)
-	b := paxi.NewBallotFromString(meta[HTTPHeaderBallot])
+	b := BigBFT.NewBallotFromString(meta[HTTPHeaderBallot])
 	if b > c.ballot {
 		c.ballot = b
 	}
 	return v, err
 }
 
-func (c *Client) readQuorum(key paxi.Key) (paxi.Value, error) {
+func (c *Client) readQuorum(key BigBFT.Key) (BigBFT.Value, error) {
 	majority := c.N/2 + 1
 	barrier := -1
 	numReachedBarrier := 0
 	numInProgress := 0
-	var value paxi.Value
+	var value BigBFT.Value
 
 	// quorum read
 	values, metadatas := c.QuorumGet(key)
@@ -129,7 +129,7 @@ func (c *Client) readQuorum(key paxi.Key) (paxi.Value, error) {
 	return value, nil
 }
 
-func (c *Client) readAny(key paxi.Key) (paxi.Value, error) {
+func (c *Client) readAny(key BigBFT.Key) (BigBFT.Value, error) {
 	v, _, err := c.HTTPClient.RESTGet(c.ID, key)
 	return v, err
 }

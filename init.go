@@ -1,10 +1,10 @@
-package Blockchain
+package BigBFT
 
 import (
 	"flag"
 	"net/http"
 
-	"Blockchain/log"
+	"github.com/salemmohammed/BigBFT/log"
 )
 
 // Init setup Blockchain package

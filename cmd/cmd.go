@@ -8,7 +8,8 @@ import (
 	"strconv"
 	"strings"
 
-	"Blockchain"
+	"github.com/salemmohammed/BigBFT"
+	"github.com/salemmohammed/BigBFT/paxos"
 )
 
 var id = flag.String("id", "", "node id this client connects to")
@@ -25,8 +26,8 @@ func usage() string {
 	return s
 }
 
-var client Blockchain.Client
-var admin Blockchain.AdminClient
+var client BigBFT.Client
+var admin BigBFT.AdminClient
 
 func run(cmd string, args []string) {
 	switch cmd {
@@ -36,7 +37,7 @@ func run(cmd string, args []string) {
 			return
 		}
 		k, _ := strconv.Atoi(args[0])
-		v, _ := client.Get(Blockchain.Key(k))
+		v, _ := client.Get(BigBFT.Key(k))
 		fmt.Println(string(v))
 
 	case "put":
@@ -45,7 +46,7 @@ func run(cmd string, args []string) {
 			return
 		}
 		k, _ := strconv.Atoi(args[0])
-		client.Put(Blockchain.Key(k), []byte(args[1]))
+		client.Put(BigBFT.Key(k), []byte(args[1]))
 		//fmt.Println(string(v))
 
 	case "consensus":
@@ -54,7 +55,7 @@ func run(cmd string, args []string) {
 			return
 		}
 		k, _ := strconv.Atoi(args[0])
-		v := admin.Consensus(Blockchain.Key(k))
+		v := admin.Consensus(BigBFT.Key(k))
 		fmt.Println(v)
 
 	case "crash":
@@ -62,7 +63,7 @@ func run(cmd string, args []string) {
 			fmt.Println("crash id time(s)")
 			return
 		}
-		id := Blockchain.ID(args[0])
+		id := BigBFT.ID(args[0])
 		time, err := strconv.Atoi(args[1])
 		if err != nil {
 			fmt.Println("second argument should be integer")
@@ -80,9 +81,9 @@ func run(cmd string, args []string) {
 			fmt.Println("time argument should be integer")
 			return
 		}
-		ids := make([]Blockchain.ID, 0)
+		ids := make([]BigBFT.ID, 0)
 		for _, s := range args[1:] {
-			ids = append(ids, Blockchain.ID(s))
+			ids = append(ids, BigBFT.ID(s))
 		}
 		admin.Partition(time, ids...)
 
@@ -97,15 +98,15 @@ func run(cmd string, args []string) {
 }
 
 func main() {
-	Blockchain.Init()
+	BigBFT.Init()
 
 
-	admin = Blockchain.NewHTTPClient(Blockchain.ID(*id))
+	admin = BigBFT.NewHTTPClient(BigBFT.ID(*id))
 
 	switch *algorithm {
 
 	case "paxos":
-		client = Blockchain.NewHTTPClient(Blockchain.ID(*id))
+		client = BigBFT.NewHTTPClient(BigBFT.ID(*id))
 
 	default:
 		panic("Unknown algorithm")

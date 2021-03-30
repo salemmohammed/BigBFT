@@ -2,16 +2,17 @@ package main
 
 import (
 	"flag"
-	"Blockchain"
-	"Blockchain/log"
-	"Blockchain/paxos"
+	"sync"
+	"github.com/salemmohammed/BigBFT"
+	"github.com/salemmohammed/BigBFT/log"
+	"github.com/salemmohammed/BigBFT/paxos"
 )
 
 var algorithm = flag.String("algorithm", "paxos", "Distributed algorithm")
 var id = flag.String("id", "", "ID in format of Zone.Node.")
 
 
-func replica(id Blockchain.ID) {
+func replica(id BigBFT.ID) {
 	// first thing appear on the screen
 	log.Infof("node %v starting...", id)
 	// package name then create the instance with an id in the terminals
@@ -26,6 +27,6 @@ func replica(id Blockchain.ID) {
 }
 
 func main() {
-	Blockchain.Init() // check this.
-	replica(Blockchain.ID(*id))
+	BigBFT.Init() // check this.
+	replica(BigBFT.ID(*id))
 }

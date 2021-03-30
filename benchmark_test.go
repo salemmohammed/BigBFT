@@ -1,10 +1,10 @@
-package Blockchain
+package BigBFT
 
 import (
 	"sync"
 	"testing"
 
-	"Blockchain/log"
+	"github.com/salemmohammed/BigBFT/log"
 )
 
 type FakeDB struct {

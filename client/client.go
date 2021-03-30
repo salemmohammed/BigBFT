@@ -1,20 +1,20 @@
 package main
 
 import (
-	"Blockchain/log"
 	"encoding/binary"
 	"flag"
 
-	"Blockchain"
+	"github.com/salemmohammed/BigBFT"
+	"github.com/salemmohammed/BigBFT/paxos"
 )
 
 var id = flag.String("id", "", "node id this client connects to")
 var algorithm = flag.String("algorithm", "paxos", "Client API type [paxos, chain]")
 var load = flag.Bool("load", false, "Load K keys into DB")
 
-// db implements Paxi.DB interface for benchmarking
+// db implements BigBFT.DB interface for benchmarking
 type db struct {
-	Blockchain.Client
+	BigBFT.Client
 }
 
 func (d *db) Init() error {
@@ -26,7 +26,7 @@ func (d *db) Stop() error {
 }
 
 func (d *db) Read(k int) (int, error) {
-	key := Blockchain.Key(k)
+	key := BigBFT.Key(k)
 	v, err := d.Get(key)
 	if len(v) == 0 {
 		return 0, nil
@@ -36,7 +36,7 @@ func (d *db) Read(k int) (int, error) {
 }
 
 func (d *db) Write(k, v int) error {
-	key := Blockchain.Key(k)
+	key := BigBFT.Key(k)
 	value := make([]byte, binary.MaxVarintLen64)
 	binary.PutUvarint(value, uint64(v))
 	err := d.Put(key, value)
@@ -44,19 +44,19 @@ func (d *db) Write(k, v int) error {
 }
 
 func main() {
-	Blockchain.Init()
+	BigBFT.Init()
 
 	d := new(db)
 	switch *algorithm {
 	// name of algorithm is blockchain
 	case "paxos":
-		d.Client = Blockchain.NewHTTPClient(Blockchain.ID(*id))
+		d.Client = BigBFT.NewHTTPClient(BigBFT.ID(*id))
 	default:
 		panic("Unknown algorithm")
 	}
 	// create client and push it to the benchmark
 	// Run the benchmark in client section
-	b := Blockchain.NewBenchmark(d)
+	b := BigBFT.NewBenchmark(d)
 	if *load {
 		log.Debugf("Load keys in client")
 		b.Load()

@@ -1,4 +1,4 @@
-package Blockchain
+package BigBFT
 
 import (
 	"bytes"
@@ -10,7 +10,7 @@ import (
 	"strings"
 	"sync"
 
-	"Blockchain/log"
+	"github.com/salemmohammed/BigBFT/log"
 )
 
 var scheme = flag.String("transport", "tcp", "transport scheme (tcp, udp, chan), default tcp")

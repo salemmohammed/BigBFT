@@ -1,4 +1,4 @@
-package Blockchain
+package BigBFT
 
 import (
 	"math"
@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"Blockchain/log"
+	"github.com/salemmohammed/BigBFT/log"
 )
 // DB is general interface implemented by client to call client library
 type DB interface {

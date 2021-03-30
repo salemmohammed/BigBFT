@@ -1,10 +1,10 @@
-package Blockchain
+package BigBFT
 
 import (
 	"math"
 	"time"
 
-	"Blockchain/log"
+	"github.com/salemmohammed/BigBFT/log"
 )
 
 // Policy defines a trigger for data access patterns, that can be used in data migration protocols

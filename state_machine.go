@@ -1,4 +1,4 @@
-package Blockchain
+package BigBFT
 
 // StateMachine defines a deterministic state machine
 type StateMachine interface {

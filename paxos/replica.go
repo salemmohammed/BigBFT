@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/ailidani/paxi"
-	"github.com/ailidani/paxi/log"
+	"github.com/salemmohammed/BigBFT"
+	"github.com/salemmohammed/BigBFT/log"
 )
 
 var ephemeralLeader = flag.Bool("ephemeral_leader", false, "unstable leader, if true paxos replica try to become leader instead of forward requests to current leader")
@@ -21,16 +21,16 @@ const (
 
 // Replica for one Paxos instance
 type Replica struct {
-	paxi.Node
+	BigBFT.Node
 	*Paxos
 }
 
 // NewReplica generates new Paxos replica
-func NewReplica(id paxi.ID) *Replica {
+func NewReplica(id BigBFT.ID) *Replica {
 	r := new(Replica)
-	r.Node = paxi.NewNode(id)
+	r.Node = BigBFT.NewNode(id)
 	r.Paxos = NewPaxos(r)
-	r.Register(paxi.Request{}, r.handleRequest)
+	r.Register(BigBFT.Request{}, r.handleRequest)
 	r.Register(P1a{}, r.HandleP1a)
 	r.Register(P1b{}, r.HandleP1b)
 	r.Register(P2a{}, r.HandleP2a)
@@ -39,12 +39,12 @@ func NewReplica(id paxi.ID) *Replica {
 	return r
 }
 
-func (r *Replica) handleRequest(m paxi.Request) {
+func (r *Replica) handleRequest(m BigBFT.Request) {
 	log.Debugf("Replica %s received %v\n", r.ID(), m)
 
 	if m.Command.IsRead() && *read != "" {
 		v, inProgress := r.readInProgress(m)
-		reply := paxi.Reply{
+		reply := BigBFT.Reply{
 			Command:    m.Command,
 			Value:      v,
 			Properties: make(map[string]string),
@@ -65,7 +65,7 @@ func (r *Replica) handleRequest(m paxi.Request) {
 	}
 }
 
-func (r *Replica) readInProgress(m paxi.Request) (paxi.Value, bool) {
+func (r *Replica) readInProgress(m BigBFT.Request) (BigBFT.Value, bool) {
 	// TODO
 	// (1) last slot is read?
 	// (2) entry in log over writen

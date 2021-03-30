@@ -1,11 +1,11 @@
-package Blockchain
+package BigBFT
 
 import (
 	"encoding/json"
 	"flag"
 	"os"
 
-	"Blockchain/log"
+	"github.com/salemmohammed/BigBFT/log"
 )
 
 var configFile = flag.String("config", "config.json", "Configuration file for Blockchain replica. Defaults to config.json.")

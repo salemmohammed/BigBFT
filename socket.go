@@ -1,9 +1,9 @@
-package Blockchain
+package BigBFT
 
 import (
 	"math/rand"
 	"time"
-	"Blockchain/log"
+	"github.com/salemmohammed/BigBFT/log"
 )
 
 // Socket integrates all networking interface and fault injections

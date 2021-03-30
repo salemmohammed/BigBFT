@@ -1,8 +1,8 @@
-package Blockchain
+package BigBFT
 import "C"
 import (
-	"Blockchain/lib"
-	"Blockchain/log"
+	"github.com/salemmohammed/BigBFT/lib"
+	"github.com/salemmohammed/BigBFT/log"
 	"bufio"
 	"container/list"
 	"encoding/gob"

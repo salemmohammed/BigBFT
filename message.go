@@ -1,7 +1,7 @@
-package Blockchain
+package BigBFT
 
 import (
-	"Blockchain/log"
+	"github.com/salemmohammed/BigBFT/log"
 	"encoding/gob"
 	"fmt"
 )

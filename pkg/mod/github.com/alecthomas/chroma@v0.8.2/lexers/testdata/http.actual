@@ -1,5 +1,0 @@
-GET /foo HTTP/1.1
-Content-Type: application/json
-User-Agent: foo
-
-{"hello": "world"}

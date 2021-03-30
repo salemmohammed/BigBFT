@@ -4,49 +4,49 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/ailidani/paxi"
+	"github.com/salemmohammed/BigBFT"
 )
 
 // entry in log
 type entry struct {
-	ballot    paxi.Ballot
-	command   paxi.Command
+	ballot    BigBFT.Ballot
+	command   BigBFT.Command
 	commit    bool
-	request   *paxi.Request
-	quorum    *paxi.Quorum
+	request   *BigBFT.Request
+	quorum    *BigBFT.Quorum
 	timestamp time.Time
 }
 
 // Paxos instance
 type Paxos struct {
-	paxi.Node
+	BigBFT.Node
 
-	config []paxi.ID
+	config []BigBFT.ID
 
 	log     map[int]*entry // log ordered by slot
 	execute int            // next execute slot number
 	active  bool           // active leader
-	ballot  paxi.Ballot    // highest ballot number
+	ballot  BigBFT.Ballot    // highest ballot number
 	slot    int            // highest slot number
 
-	quorum   *paxi.Quorum    // phase 1 quorum
-	requests []*paxi.Request // phase 1 pending requests
+	quorum   *BigBFT.Quorum    // phase 1 quorum
+	requests []*BigBFT.Request // phase 1 pending requests
 
-	Q1              func(*paxi.Quorum) bool
-	Q2              func(*paxi.Quorum) bool
+	Q1              func(*BigBFT.Quorum) bool
+	Q2              func(*BigBFT.Quorum) bool
 	ReplyWhenCommit bool
 }
 
 // NewPaxos creates new paxos instance
-func NewPaxos(n paxi.Node, options ...func(*Paxos)) *Paxos {
+func NewPaxos(n BigBFT.Node, options ...func(*Paxos)) *Paxos {
 	p := &Paxos{
 		Node:            n,
-		log:             make(map[int]*entry, paxi.GetConfig().BufferSize),
+		log:             make(map[int]*entry, BigBFT.GetConfig().BufferSize),
 		slot:            -1,
-		quorum:          paxi.NewQuorum(),
-		requests:        make([]*paxi.Request, 0),
-		Q1:              func(q *paxi.Quorum) bool { return q.Majority() },
-		Q2:              func(q *paxi.Quorum) bool { return q.Majority() },
+		quorum:          BigBFT.NewQuorum(),
+		requests:        make([]*BigBFT.Request, 0),
+		Q1:              func(q *BigBFT.Quorum) bool { return q.Majority() },
+		Q2:              func(q *BigBFT.Quorum) bool { return q.Majority() },
 		ReplyWhenCommit: false,
 	}
 
@@ -63,12 +63,12 @@ func (p *Paxos) IsLeader() bool {
 }
 
 // Leader returns leader id of the current ballot
-func (p *Paxos) Leader() paxi.ID {
+func (p *Paxos) Leader() BigBFT.ID {
 	return p.ballot.ID()
 }
 
 // Ballot returns current ballot
-func (p *Paxos) Ballot() paxi.Ballot {
+func (p *Paxos) Ballot() BigBFT.Ballot {
 	return p.ballot
 }
 
@@ -78,12 +78,12 @@ func (p *Paxos) SetActive(active bool) {
 }
 
 // SetBallot sets a new ballot number
-func (p *Paxos) SetBallot(b paxi.Ballot) {
+func (p *Paxos) SetBallot(b BigBFT.Ballot) {
 	p.ballot = b
 }
 
 // HandleRequest handles request and start phase 1 or phase 2
-func (p *Paxos) HandleRequest(r paxi.Request) {
+func (p *Paxos) HandleRequest(r BigBFT.Request) {
 	// log.Debugf("Replica %s received %v\n", p.ID(), r)
 	if !p.active {
 		p.requests = append(p.requests, &r)
@@ -108,13 +108,13 @@ func (p *Paxos) P1a() {
 }
 
 // P2a starts phase 2 accept
-func (p *Paxos) P2a(r *paxi.Request) {
+func (p *Paxos) P2a(r *BigBFT.Request) {
 	p.slot++
 	p.log[p.slot] = &entry{
 		ballot:    p.ballot,
 		command:   r.Command,
 		request:   r,
-		quorum:    paxi.NewQuorum(),
+		quorum:    BigBFT.NewQuorum(),
 		timestamp: time.Now(),
 	}
 	p.log[p.slot].quorum.ACK(p.ID())
@@ -123,8 +123,8 @@ func (p *Paxos) P2a(r *paxi.Request) {
 		Slot:    p.slot,
 		Command: r.Command,
 	}
-	if paxi.GetConfig().Thrifty {
-		p.MulticastQuorum(paxi.GetConfig().N()/2+1, m)
+	if BigBFT.GetConfig().Thrifty {
+		p.MulticastQuorum(BigBFT.GetConfig().N()/2+1, m)
 	} else {
 		p.Broadcast(m)
 	}
@@ -163,7 +163,7 @@ func (p *Paxos) HandleP1a(m P1a) {
 
 func (p *Paxos) update(scb map[int]CommandBallot) {
 	for s, cb := range scb {
-		p.slot = paxi.Max(p.slot, s)
+		p.slot = BigBFT.Max(p.slot, s)
 		if e, exists := p.log[s]; exists {
 			if !e.commit && cb.Ballot > e.ballot {
 				e.ballot = cb.Ballot
@@ -210,7 +210,7 @@ func (p *Paxos) HandleP1b(m P1b) {
 					continue
 				}
 				p.log[i].ballot = p.ballot
-				p.log[i].quorum = paxi.NewQuorum()
+				p.log[i].quorum = BigBFT.NewQuorum()
 				p.log[i].quorum.ACK(p.ID())
 				p.Broadcast(P2a{
 					Ballot:  p.ballot,
@@ -222,7 +222,7 @@ func (p *Paxos) HandleP1b(m P1b) {
 			for _, req := range p.requests {
 				p.P2a(req)
 			}
-			p.requests = make([]*paxi.Request, 0)
+			p.requests = make([]*BigBFT.Request, 0)
 		}
 	}
 }
@@ -235,7 +235,7 @@ func (p *Paxos) HandleP2a(m P2a) {
 		p.ballot = m.Ballot
 		p.active = false
 		// update slot number
-		p.slot = paxi.Max(p.slot, m.Slot)
+		p.slot = BigBFT.Max(p.slot, m.Slot)
 		// update entry
 		if e, exists := p.log[m.Slot]; exists {
 			if !e.commit && m.Ballot > e.ballot {
@@ -296,7 +296,7 @@ func (p *Paxos) HandleP2b(m P2b) {
 
 			if p.ReplyWhenCommit {
 				r := p.log[m.Slot].request
-				r.Reply(paxi.Reply{
+				r.Reply(BigBFT.Reply{
 					Command:   r.Command,
 					Timestamp: r.Timestamp,
 				})
@@ -311,7 +311,7 @@ func (p *Paxos) HandleP2b(m P2b) {
 func (p *Paxos) HandleP3(m P3) {
 	// log.Debugf("Replica %s ===[%v]===>>> Replica %s\n", m.Ballot.ID(), m, p.ID())
 
-	p.slot = paxi.Max(p.slot, m.Slot)
+	p.slot = BigBFT.Max(p.slot, m.Slot)
 
 	e, exist := p.log[m.Slot]
 	if exist {
@@ -330,7 +330,7 @@ func (p *Paxos) HandleP3(m P3) {
 
 	if p.ReplyWhenCommit {
 		if e.request != nil {
-			e.request.Reply(paxi.Reply{
+			e.request.Reply(BigBFT.Reply{
 				Command:   e.request.Command,
 				Timestamp: e.request.Timestamp,
 			})
@@ -349,7 +349,7 @@ func (p *Paxos) exec() {
 		// log.Debugf("Replica %s execute [s=%d, cmd=%v]", p.ID(), p.execute, e.command)
 		value := p.Execute(e.command)
 		if e.request != nil {
-			reply := paxi.Reply{
+			reply := BigBFT.Reply{
 				Command:    e.command,
 				Value:      value,
 				Properties: make(map[string]string),
@@ -370,5 +370,5 @@ func (p *Paxos) forward() {
 	for _, m := range p.requests {
 		p.Forward(p.ballot.ID(), *m)
 	}
-	p.requests = make([]*paxi.Request, 0)
+	p.requests = make([]*BigBFT.Request, 0)
 }

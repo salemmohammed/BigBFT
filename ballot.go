@@ -1,11 +1,11 @@
-package Blockchain
+package BigBFT
 
 import (
 	"fmt"
 	"strconv"
 	"strings"
 
-	"Blockchain/log"
+	"github.com/salemmohammed/BigBFT/log"
 )
 
 // Ballot is ballot number type combines 32 bits of natual number and 32 bits of node id into uint64

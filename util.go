@@ -1,4 +1,4 @@
-package Blockchain
+package BigBFT
 
 import (
 	"encoding/gob"
@@ -6,7 +6,7 @@ import (
 	"net"
 	"time"
 
-	"Blockchain/log"
+	"github.com/salemmohammed/BigBFT/log"
 )
 
 // Max of two int

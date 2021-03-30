@@ -1,7 +1,0 @@
-components:
-  schemas:
-    ObjectX:
-      type: object
-      properties:
-        name:
-          type: string

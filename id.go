@@ -1,10 +1,10 @@
-package Blockchain
+package BigBFT
 
 import (
 	"strconv"
 	"strings"
 
-	"Blockchain/log"
+	"github.com/salemmohammed/BigBFT/log"
 )
 
 // ID represents a generic identifier in format of Zone.Node

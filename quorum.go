@@ -1,4 +1,4 @@
-package Blockchain
+package BigBFT
 
 // Quorum records each acknowledgement and check for different types of quorum satisfied
 type Quorum struct {

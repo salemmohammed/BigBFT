@@ -4,7 +4,7 @@ import (
 	"encoding/gob"
 	"fmt"
 
-	"github.com/ailidani/paxi"
+	"github.com/salemmohammed/BigBFT"
 )
 
 func init() {
@@ -17,7 +17,7 @@ func init() {
 
 // P1a prepare message
 type P1a struct {
-	Ballot paxi.Ballot
+	Ballot BigBFT.Ballot
 }
 
 func (m P1a) String() string {
@@ -26,8 +26,8 @@ func (m P1a) String() string {
 
 // CommandBallot conbines each command with its ballot number
 type CommandBallot struct {
-	Command paxi.Command
-	Ballot  paxi.Ballot
+	Command BigBFT.Command
+	Ballot  BigBFT.Ballot
 }
 
 func (cb CommandBallot) String() string {
@@ -36,8 +36,8 @@ func (cb CommandBallot) String() string {
 
 // P1b promise message
 type P1b struct {
-	Ballot paxi.Ballot
-	ID     paxi.ID               // from node id
+	Ballot BigBFT.Ballot
+	ID     BigBFT.ID               // from node id
 	Log    map[int]CommandBallot // uncommitted logs
 }
 
@@ -47,9 +47,9 @@ func (m P1b) String() string {
 
 // P2a accept message
 type P2a struct {
-	Ballot  paxi.Ballot
+	Ballot  BigBFT.Ballot
 	Slot    int
-	Command paxi.Command
+	Command BigBFT.Command
 }
 
 func (m P2a) String() string {
@@ -58,8 +58,8 @@ func (m P2a) String() string {
 
 // P2b accepted message
 type P2b struct {
-	Ballot paxi.Ballot
-	ID     paxi.ID // from node id
+	Ballot BigBFT.Ballot
+	ID     BigBFT.ID // from node id
 	Slot   int
 }
 
@@ -69,9 +69,9 @@ func (m P2b) String() string {
 
 // P3 commit message
 type P3 struct {
-	Ballot  paxi.Ballot
+	Ballot  BigBFT.Ballot
 	Slot    int
-	Command paxi.Command
+	Command BigBFT.Command
 }
 
 func (m P3) String() string {

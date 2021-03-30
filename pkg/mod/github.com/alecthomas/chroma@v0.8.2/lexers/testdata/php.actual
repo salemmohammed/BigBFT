@@ -1,9 +1,0 @@
-$docs = $modx->getIterator('modResource', ["parent" => 84]);
-
-foreach($docs as $doc){
-    $q=$doc->content;
-    $doc->set("content", preg_replace("/Some value/i", "Replacement", $q));
-    print_r($doc->content);
-    // $doc->save();
-}
-// some comment
