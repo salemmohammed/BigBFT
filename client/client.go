@@ -9,7 +9,7 @@ import (
 )
 
 var id = flag.String("id", "", "node id this client connects to")
-var algorithm = flag.String("algorithm", "paxos", "Client API type [paxos, chain]")
+var algorithm = flag.String("algorithm", "consensus", "Client API type [paxos, chain]")
 var load = flag.Bool("load", false, "Load K keys into DB")
 
 // db implements BigBFT.DB interface for benchmarking
@@ -49,7 +49,7 @@ func main() {
 	d := new(db)
 	switch *algorithm {
 	// name of algorithm is blockchain
-	case "paxos":
+	case "consensus":
 		d.Client = BigBFT.NewHTTPClient(BigBFT.ID(*id))
 	default:
 		panic("Unknown algorithm")

@@ -4,7 +4,7 @@ import (
 	"flag"
 	"github.com/salemmohammed/BigBFT"
 	"github.com/salemmohammed/BigBFT/log"
-	"github.com/salemmohammed/BigBFT/paxos"
+	"github.com/salemmohammed/BigBFT/consensus"
 )
 
 var algorithm = flag.String("algorithm", "paxos", "Distributed algorithm")
@@ -18,7 +18,7 @@ func replica(id BigBFT.ID) {
 	// Run function is in Blockchain.node.
 	switch *algorithm {
 	case "paxos":
-		paxos.NewReplica(id).Run()
+		consensus.NewReplica(id).Run()
 
 	default:
 		panic("Unknown algorithm")

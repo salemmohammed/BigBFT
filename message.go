@@ -1,7 +1,6 @@
 package BigBFT
 
 import (
-	"github.com/salemmohammed/BigBFT/log"
 	"encoding/gob"
 	"fmt"
 )
@@ -28,20 +27,16 @@ type Request struct {
 	Timestamp  int64
 	NodeID     ID         // forward by node
 	c          chan Reply // reply channel created by request receiver
-	Done       chan bool
 	Error error
 }
 
 // Reply replies to current client session
 func (r *Request) Reply(reply Reply) {
-	log.Debugf("reply %v ", reply)
-	log.Debugf("re %v ", r)
-
 	r.c <- reply
 }
 
 func (r Request) String() string {
-	return fmt.Sprintf("Request {cmd=%v nid=%v}, Done={%v}", r.Command, r.NodeID,r.Done)
+	return fmt.Sprintf("Request {cmd=%v nid=%v}", r.Command, r.NodeID)
 }
 
 // Reply includes all info that might replies to back the client for the coresponding reqeust

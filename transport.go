@@ -45,14 +45,14 @@ func NewTransport(addr string) Transport {
 	if err != nil {
 		log.Fatalf("error parsing address %s : %s\n", addr, err)
 	}
-	log.Debugf("url:%v",uri)
+	//log.Debugf("url:%v",uri)
 	transport := &transport{
 		uri:   uri,
 		send:  make(chan interface{}, config.ChanBufferSize),
 		recv:  make(chan interface{}, config.ChanBufferSize),
 		close: make(chan struct{}),
 	}
-	log.Debugf("uri.Scheme:%v",uri.Scheme)
+	//log.Debugf("uri.Scheme:%v",uri.Scheme)
 	switch uri.Scheme {
 	case "chan":
 		t := new(channel)
@@ -80,13 +80,13 @@ type transport struct {
 }
 
 func (t *transport) Send(m interface{}) {
-	log.Debugf("t.send : %v", m)
+	//log.Debugf("t.send : %v", m)
 	t.send <- m
-	log.Debugf("done from sending")
+	//log.Debugf("done from sending")
 }
 
 func (t *transport) Recv() interface{} {
-	log.Debugf("t.recv ")
+	//log.Debugf("t.recv ")
 	return <-t.recv
 }
 
@@ -100,26 +100,26 @@ func (t *transport) Scheme() string {
 }
 
 func (t *transport) Dial() error {
-	log.Debugf("Dial()")
+	//log.Debugf("Dial()")
 	conn, err := net.Dial(t.Scheme(), t.uri.Host)
 	if err != nil {
 		return err
 	}
-	log.Debugf("Host : %v", t.uri.Host)
+	//log.Debugf("Host : %v", t.uri.Host)
 	go func(conn net.Conn) {
 		// w := bufio.NewWriter(conn)
 		// codec := NewCodec(config.Codec, conn)
 		encoder := gob.NewEncoder(conn)
 		defer conn.Close()
 		for m := range t.send {
-			log.Debugf("m:%v", m)
+			//log.Debugf("m:%v", m)
 			err := encoder.Encode(&m)
 			if err != nil {
 				log.Error(err)
 			}
 		}
 	}(conn)
-	log.Debugf("Done Dail")
+	//log.Debugf("Done Dail")
 	return nil
 }
 

@@ -50,6 +50,7 @@ func NewHTTPClient(id ID) *HTTPClient {
 		N:      len(config.Addrs),
 		Addrs:  config.Addrs,
 		HTTP:   config.HTTPAddrs,
+		// creating client request object
 		Client: &http.Client{},
 	}
 	if id != "" {
@@ -148,45 +149,31 @@ func (c *HTTPClient) GetURL(id ID, key Key) string {
 	}
 	return c.HTTP[id] + "/" + strconv.Itoa(int(key))
 }
-
 // rest accesses server's REST API with url = http://ip:port/key
-// if value == nil, it's a read
 func (c *HTTPClient) rest(id ID, key Key, value Value,count int) (Value, map[string]string, error) {
-	// get url
-	//log.Debugf("I am in rest")
 	url := c.GetURL(id, key)
-
 	method := http.MethodGet
 	var body io.Reader
 	if value != nil {
 		method = http.MethodPut
 		body = bytes.NewBuffer(value)
-		//log.Debugf("method=%v",method)
 	}
-	//log.Debugf("URL %v", url)
+	// Create Request object
 	req, err := http.NewRequest(method, url, body)
-	//log.Debugf("req=%v",req)
 	if err != nil {
 		log.Debugf("we cannot create a request")
 		log.Error(err)
 		return nil, nil, err
 	}
-	//log.Debugf("HTTPClientID=%v",HTTPClientID)
-	//log.Debugf("HTTPCommandID=%v",HTTPCommandID)
-	//log.Debugf("c.ID=%v",c.ID)
-	//log.Debugf("CID=%v",count)
-
 	req.Header.Set(HTTPClientID, string(id))
 	req.Header.Set(HTTPCommandID, strconv.Itoa(count))
-	// r.Header.Set(HTTPTimestamp, strconv.FormatInt(time.Now().UnixNano(), 10))
 
+	// Send the request object with the client
 	rep, err := c.Client.Do(req)
-	//log.Debugf("c.Client.Do(req)=%v",rep)
 	if err != nil {
 		log.Error(err)
 		return nil, nil, err
 	}
-
 
 	defer rep.Body.Close()
 
@@ -197,7 +184,7 @@ func (c *HTTPClient) rest(id ID, key Key, value Value,count int) (Value, map[str
 	}
 	//log.Debugf("metadata=%v",metadata)
 	//log.Debugf("rep.StatusCode=%v",rep.StatusCode)
-
+	// if the status ok, read the body of the response.
 	if rep.StatusCode == http.StatusOK {
 		b, err := ioutil.ReadAll(rep.Body)
 		if err != nil {
