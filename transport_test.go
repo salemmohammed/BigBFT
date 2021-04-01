@@ -1,5 +1,4 @@
 package BigBFT
-
 import (
 	"encoding/gob"
 	"testing"

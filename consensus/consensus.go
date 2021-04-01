@@ -20,17 +20,17 @@ type entry struct {
 type Consensus struct {
 	BigBFT.Node
 
-	log     map[int]*entry // log ordered by slot
-	execute int            // next execute slot number
-	active  bool           // active leader
-	ballot  BigBFT.Ballot    // highest ballot number
-	slot    int            // highest slot number
+	log        map[int]*entry // log ordered by slot
+	execute    int            // next execute slot number
+	active     bool           // active leader
+	ballot     BigBFT.Ballot    // highest ballot number
+	slot       int            // highest slot number
 
-	quorum   *BigBFT.Quorum    // phase 1 quorum
-	requests []*BigBFT.Request // phase 1 pending requests
+	quorum     *BigBFT.Quorum    // phase 1 quorum
+	requests   []*BigBFT.Request // phase 1 pending requests
 
-	Q1              func(*BigBFT.Quorum) bool
-	Q2              func(*BigBFT.Quorum) bool
+	Q1         func(*BigBFT.Quorum) bool
+	Q2         func(*BigBFT.Quorum) bool
 }
 
 // NewPaxos creates new paxos instance
@@ -61,12 +61,13 @@ func (p *Consensus) HandleRequest(r BigBFT.Request) {
 }
 
 func (p *Consensus) Propose(r *BigBFT.Request) {
-
+	// create the log entry
 	p.log[p.slot] = &entry{
 		ballot:    p.ballot,
 		request:   r,
 		command:   r.Command,
 		timestamp: time.Now(),
+		quorum:    BigBFT.NewQuorum(),
 		commit:    false,
 	}
 
@@ -75,37 +76,43 @@ func (p *Consensus) Propose(r *BigBFT.Request) {
 
 func (p *Consensus) HandlePropose(m Propose) {
 
-	p.slot = BigBFT.Max(m.Slot,p.slot)
 	log.Debugf("HandlePropose = %v", m)
-	e, exist := p.log[p.slot]
+	e, exist := p.log[m.Slot]
 	if !exist {
-		p.log[p.slot] = &entry{
+		p.log[m.Slot] = &entry{
 			ballot:    m.Ballot,
 			request:   &m.Request,
 			command:   m.Request.Command,
 			timestamp: time.Now(),
+			quorum:    BigBFT.NewQuorum(),
 			commit:    false,
 		}
-		e = p.log[p.slot]
+		e = p.log[m.Slot]
 	}
 	e.commit = false
-	p.Broadcast(Vote{Ballot: m.Ballot, ID: p.ID(), Command: m.Request.Command, Slot: p.slot})
+	p.Broadcast(Vote{Ballot: m.Ballot, ID: p.ID(), Command: m.Request.Command, Slot: m.Slot})
 }
 
 func (p *Consensus) HandleVote(m Vote) {
-	p.slot = BigBFT.Max(m.Slot,p.slot)
-	e, exist := p.log[p.slot]
+
+	e, exist := p.log[m.Slot]
 	if !exist {
-		p.log[p.slot] = &entry{
+		p.log[m.Slot] = &entry{
 			ballot:  m.Ballot,
 			command: m.Command,
-			commit:  true,
+			quorum:    BigBFT.NewQuorum(),
+			commit:  false,
 		}
-		e = p.log[p.slot]
+		e = p.log[m.Slot]
 	}
-	e.command = m.Command
-	e.commit = true
-	p.exec()
+	e.quorum.ACK(m.ID)
+	e.quorum.ACK(p.ID())
+	log.Debugf("size %v", e.quorum.Size())
+	if e.quorum.Majority() {
+		e.command = m.Command
+		e.commit = true
+		p.exec()
+	}
 }
 func (p *Consensus) exec() {
 	for {

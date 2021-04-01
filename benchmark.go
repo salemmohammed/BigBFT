@@ -86,7 +86,6 @@ type Benchmark struct {
 
 // NewBenchmark returns new Benchmark object given implementation of DB interface
 func NewBenchmark(db DB) *Benchmark {
-	log.Debugf("I start the NewBenchmark after client request")
 	b := new(Benchmark)
 	b.db = db
 	b.Bconfig = config.Benchmark
@@ -134,7 +133,6 @@ func (b *Benchmark) Load() {
 
 // Run starts the main logic of benchmarking
 func (b *Benchmark) Run() {
-	log.Debugf("Run in Benchmark")
 	var stop chan bool
 	if b.Move {
 		log.Debugf("This move is false all the time")
@@ -149,7 +147,6 @@ func (b *Benchmark) Run() {
 	latencies := make(chan time.Duration, 1000)
 	defer close(latencies)
 	go b.collect(latencies)
-	log.Debugf("I am in Run before loop of concurrency")
 	// number of threads or concurrency
 	for i := 0; i < b.Concurrency; i++ {
 		// this b is object calls worker function
@@ -167,7 +164,6 @@ func (b *Benchmark) Run() {
 				break loop
 			default:
 				b.wait.Add(1)
-				log.Debugf("the key is generated")
 				keys <- b.next()
 			}
 		}
@@ -245,7 +241,6 @@ func (b *Benchmark) worker(keys <-chan int, result chan<- time.Duration) {
 	var v int
 	var err error
 	for k := range keys {
-		log.Debugf("K: %v",k)
 		op := new(operation)
 		if rand.Float64() < b.W {
 			v = rand.Int()

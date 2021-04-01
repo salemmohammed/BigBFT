@@ -2,10 +2,10 @@ package BigBFT
 
 import (
 	"math/rand"
+	"sync"
 	"time"
 	"github.com/salemmohammed/BigBFT/log"
 )
-
 // Socket integrates all networking interface and fault injections
 type Socket interface {
 
@@ -42,6 +42,8 @@ type socket struct {
 	drop  map[ID]bool
 	slow  map[ID]int
 	flaky map[ID]float64
+
+	lock sync.RWMutex // locking map nodes
 }
 
 // NewSocket return Socket interface instance given self ID, node list, transport and codec name
@@ -66,12 +68,10 @@ func (s *socket) Send(to ID, m interface{}) {
 	log.Debugf("node %s send message %+v to %v", s.id, m, to)
 
 	if s.crash {
-		log.Debugf("s.crash ")
 		return
 	}
 
 	if s.drop[to] {
-		log.Debugf("s.drop ")
 		return
 	}
 
@@ -81,21 +81,25 @@ func (s *socket) Send(to ID, m interface{}) {
 		}
 	}
 
+	s.lock.RLock()
 	t, exists := s.nodes[to]
+	s.lock.RUnlock()
 	if !exists {
-		log.Debugf("Create Transport layer")
+		s.lock.RLock()
 		address, ok := s.addresses[to]
+		s.lock.RUnlock()
 		if !ok {
 			log.Errorf("socket does not have address of node %s", to)
 			return
 		}
 		t = NewTransport(address)
 		err := Retry(t.Dial, 100, time.Duration(50)*time.Millisecond)
-		if err == nil {
-			s.nodes[to] = t
-		} else {
+		if err != nil {
 			panic(err)
 		}
+		s.lock.Lock()
+		s.nodes[to] = t
+		s.lock.Unlock()
 	}
 
 	if delay, ok := s.slow[to]; ok && delay > 0 {
@@ -106,15 +110,17 @@ func (s *socket) Send(to ID, m interface{}) {
 		}()
 		return
 	}
-	log.Debugf("socket send message for transport layer")
+
 	t.Send(m)
 }
 
 func (s *socket) Recv() interface{} {
+	s.lock.RLock()
+	t := s.nodes[s.id]
+	s.lock.RUnlock()
 	for {
-		m := s.nodes[s.id].Recv()
+		m := t.Recv()
 		if !s.crash {
-			log.Debugf("crash in socket")
 			return m
 		}
 	}
