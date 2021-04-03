@@ -44,7 +44,6 @@ func NewConsensus(n BigBFT.Node, options ...func(*Consensus)) *Consensus {
 		Q1:              func(q *BigBFT.Quorum) bool { return q.Majority() },
 		Q2:              func(q *BigBFT.Quorum) bool { return q.Majority() },
 	}
-
 	for _, opt := range options {
 		opt(p)
 	}

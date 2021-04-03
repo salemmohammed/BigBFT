@@ -3,9 +3,8 @@ package main
 import (
 	"encoding/binary"
 	"flag"
-	"github.com/salemmohammed/BigBFT/log"
-
 	"github.com/salemmohammed/BigBFT"
+	"github.com/salemmohammed/BigBFT/log"
 )
 
 var id = flag.String("id", "", "node id this client connects to")
@@ -35,11 +34,11 @@ func (d *db) Read(k int) (int, error) {
 	return int(x), err
 }
 
-func (d *db) Write(k, v int) error {
+func (d *db) Write(k int, v []byte) error {
 	key := BigBFT.Key(k)
-	value := make([]byte, binary.MaxVarintLen64)
-	binary.PutUvarint(value, uint64(v))
-	err := d.Put(key, value)
+	//value := make([]byte, binary.MaxVarintLen64)
+	//binary.PutUvarint(value, uint64(v))
+	err := d.Put(key, v)
 	return err
 }
 

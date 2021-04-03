@@ -12,7 +12,7 @@ import (
 type DB interface {
 	Init() error
 	Read(key int) (int, error)
-	Write(key, value int) error
+	Write(key int, value []byte) error
 	Stop() error
 }
 
@@ -238,21 +238,23 @@ func (b *Benchmark) next() int {
 func (b *Benchmark) worker(keys <-chan int, result chan<- time.Duration) {
 	var s time.Time
 	var e time.Time
-	var v int
+	//var v int
 	var err error
+	data := make([]byte, 4)
 	for k := range keys {
 		op := new(operation)
 		if rand.Float64() < b.W {
-			v = rand.Int()
+			//v = rand.Int()
+			//log.Debugf("value %v", data)
 			s = time.Now()
-			err = b.db.Write(k, v)
+			err = b.db.Write(k, data)
 			e = time.Now()
-			op.input = v
+			op.input = data
 		} else {
 			s = time.Now()
-			v, err = b.db.Read(k)
+			//v, err = b.db.Read(k)
 			e = time.Now()
-			op.output = v
+			op.output = data
 		}
 		op.start = s.Sub(b.startTime).Nanoseconds()
 		if err == nil {

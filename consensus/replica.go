@@ -10,7 +10,6 @@ const (
 	HTTPHeaderBallot     = "Ballot"
 	HTTPHeaderExecute    = "Execute"
 )
-
 type Replica struct {
 	BigBFT.Node
 	*Consensus
@@ -23,6 +22,10 @@ func NewReplica(id BigBFT.ID) *Replica {
 	r.Register(BigBFT.Request{}, r.handleRequest)
 	r.Register(Propose{}, r.HandlePropose)
 	r.Register(Vote{}, r.HandleVote)
+
+	//r.Register(Block{}, r.handleBlock)
+
+
 	return r
 }
 
