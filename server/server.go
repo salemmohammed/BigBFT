@@ -3,11 +3,11 @@ package main
 import (
 	"flag"
 	"github.com/salemmohammed/BigBFT"
-	"github.com/salemmohammed/BigBFT/log"
 	"github.com/salemmohammed/BigBFT/consensus"
+	"github.com/salemmohammed/BigBFT/log"
 )
 
-var algorithm = flag.String("algorithm", "paxos", "Distributed algorithm")
+var algorithm = flag.String("algorithm", "consensus", "Distributed algorithm")
 var id = flag.String("id", "", "ID in format of Zone.Node.")
 
 
@@ -17,8 +17,9 @@ func replica(id BigBFT.ID) {
 	// package name then create the instance with an id in the terminals
 	// Run function is in Blockchain.node.
 	switch *algorithm {
-	case "paxos":
+	case "consensus":
 		consensus.NewReplica(id).Run()
+
 
 	default:
 		panic("Unknown algorithm")

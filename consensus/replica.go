@@ -30,6 +30,7 @@ func NewReplica(id BigBFT.ID) *Replica {
 }
 
 func (r *Replica) handleRequest(m BigBFT.Request) {
+	log.Debugf("the count is = %v ", m.Command.Counter)
 	log.Debugf("Replica %s received %v\n", r.ID(), m)
 	r.Consensus.HandleRequest(m)
 }

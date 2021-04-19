@@ -20,6 +20,7 @@ type Command struct {
 	Value     Value
 	ClientID  ID
 	CommandID int
+	Counter	  int
 }
 
 func (c Command) Empty() bool {

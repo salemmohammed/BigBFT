@@ -51,7 +51,7 @@ func (q *Quorum) All() bool {
 
 // Majority quorum satisfied
 func (q *Quorum) Majority() bool {
-	return q.size > config.n/2
+	return q.size >= config.n/2
 }
 
 // AllZones returns true if there is at one ack from each zone

@@ -17,7 +17,10 @@ const (
 	HTTPCommandID = "Cid"
 	HTTPTimestamp = "Timestamp"
 	HTTPNodeID    = "Id"
+	HTTPClientCounter = "Count"
 )
+
+//var HTTPClientCounter  = make(map[int]ID)
 
 // serve serves the http REST API request from clients
 func (n *node) http() {
@@ -59,9 +62,17 @@ func (n *node) handleRoot(w http.ResponseWriter, r *http.Request) {
 			}
 			continue
 		}
+		if k == HTTPClientCounter {
+			cmd.Counter, err = strconv.Atoi(r.Header.Get(HTTPClientCounter))
+			if err != nil {
+				log.Error(err)
+			}
+			continue
+		}
 		req.Properties[k] = r.Header.Get(k)
 	}
-
+	//log.Debugf("cmd.Counter = %v ", cmd.Counter)
+	//log.Debugf("cmd.CID = %v ", cmd.CommandID)
 	// get command key and value
 	if len(r.URL.Path) > 1 {
 		i, err := strconv.Atoi(r.URL.Path[1:])
@@ -94,7 +105,7 @@ func (n *node) handleRoot(w http.ResponseWriter, r *http.Request) {
 	req.Timestamp = time.Now().UnixNano()
 	req.NodeID = n.id // TODO does this work when forward twice
 	req.c = make(chan Reply, 1)
-
+	//log.Debugf("req %v =", req.Command)
 	n.MessageChan <- req
 
 	reply := <-req.c

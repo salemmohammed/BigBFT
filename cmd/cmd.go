@@ -9,12 +9,11 @@ import (
 	"strings"
 
 	"github.com/salemmohammed/BigBFT"
-	//"github.com/salemmohammed/BigBFT/paxos"
 )
 
 var id = flag.String("id", "", "node id this client connects to")
-var algorithm = flag.String("algorithm", "", "Client API type [paxos, chain]")
-
+var algorithm = flag.String("algorithm", "consensus", "Client API type [paxos, chain]")
+var counter int
 func usage() string {
 	s := "Usage:\n"
 	s += "\t get key\n"
@@ -46,7 +45,7 @@ func run(cmd string, args []string) {
 			return
 		}
 		k, _ := strconv.Atoi(args[0])
-		client.Put(BigBFT.Key(k), []byte(args[1]))
+		client.Put(BigBFT.Key(k), []byte(args[1]), counter)
 		//fmt.Println(string(v))
 
 	case "consensus":
@@ -105,7 +104,7 @@ func main() {
 
 	switch *algorithm {
 
-	case "paxos":
+	case "consensus":
 		client = BigBFT.NewHTTPClient(BigBFT.ID(*id))
 
 	default:

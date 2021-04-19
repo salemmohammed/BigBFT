@@ -15,6 +15,7 @@ type entry struct {
 	request   *BigBFT.Request
 	quorum    *BigBFT.Quorum
 	timestamp time.Time
+	active    bool
 }
 
 type Consensus struct {
@@ -50,10 +51,10 @@ func NewConsensus(n BigBFT.Node, options ...func(*Consensus)) *Consensus {
 
 	return p
 }
-
 func (p *Consensus) HandleRequest(r BigBFT.Request) {
 	p.active = true
-	p.slot++
+	p.slot = r.Command.Counter
+	log.Debugf("Current slot is %v", p.slot)
 	p.ballot.Next(p.ID())
 	p.requests = append(p.requests, &r)
 	p.Propose(&r)
@@ -68,6 +69,7 @@ func (p *Consensus) Propose(r *BigBFT.Request) {
 		timestamp: time.Now(),
 		quorum:    BigBFT.NewQuorum(),
 		commit:    false,
+		active:	   true,
 	}
 
 	p.Broadcast(Propose{Ballot: p.ballot, ID: p.ID(), Request: *r, Slot:p.slot})
@@ -76,7 +78,8 @@ func (p *Consensus) Propose(r *BigBFT.Request) {
 func (p *Consensus) HandlePropose(m Propose) {
 
 	log.Debugf("HandlePropose = %v", m)
-	e, exist := p.log[m.Slot]
+	log.Debugf("slot = %v", m.Slot)
+	_, exist := p.log[m.Slot]
 	if !exist {
 		p.log[m.Slot] = &entry{
 			ballot:    m.Ballot,
@@ -86,14 +89,15 @@ func (p *Consensus) HandlePropose(m Propose) {
 			quorum:    BigBFT.NewQuorum(),
 			commit:    false,
 		}
-		e = p.log[m.Slot]
+		log.Debugf("Created")
 	}
+	e := p.log[m.Slot]
 	e.commit = false
 	p.Broadcast(Vote{Ballot: m.Ballot, ID: p.ID(), Command: m.Request.Command, Slot: m.Slot})
 }
 
 func (p *Consensus) HandleVote(m Vote) {
-
+	log.Debugf("HandleVote = %v", m)
 	e, exist := p.log[m.Slot]
 	if !exist {
 		p.log[m.Slot] = &entry{
@@ -104,24 +108,31 @@ func (p *Consensus) HandleVote(m Vote) {
 		}
 		e = p.log[m.Slot]
 	}
+	e = p.log[m.Slot]
 	e.quorum.ACK(m.ID)
-	e.quorum.ACK(p.ID())
 	log.Debugf("size %v", e.quorum.Size())
 	if e.quorum.Majority() {
+		e.quorum.Reset()
+		log.Debugf("inside majority")
 		e.command = m.Command
-		e.commit = true
-		p.exec()
+		if e.commit == false{
+			e.commit = true
+			p.exec()
+		}
 	}
 }
 func (p *Consensus) exec() {
 	for {
 		e, ok := p.log[p.execute]
+		log.Debugf("p.execute = %v ", p.execute)
 		if !ok || !e.commit {
+			log.Debugf("break")
 			break
 		}
 		log.Debugf("Replica %s execute [s=%d, cmd=%v]", p.ID(), p.execute, e.command)
 		value := p.Execute(e.command)
 		if e.request != nil {
+			log.Debugf("inside if reply ")
 			reply := BigBFT.Reply{
 				Command:    e.command,
 				Value:      value,
@@ -130,11 +141,13 @@ func (p *Consensus) exec() {
 			reply.Properties[HTTPHeaderSlot] = strconv.Itoa(p.execute)
 			reply.Properties[HTTPHeaderBallot] = e.ballot.String()
 			reply.Properties[HTTPHeaderExecute] = strconv.Itoa(p.execute)
-			e.request.Reply(reply)
+			if e.active{
+				e.request.Reply(reply)
+			}
 			e.request = nil
 		}
 		// TODO clean up the log periodically
-		delete(p.log, p.execute)
+		//delete(p.log, p.execute)
 		p.execute++
 		log.Debugf("Done")
 	}

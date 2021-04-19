@@ -8,14 +8,14 @@ import (
 
 	"github.com/salemmohammed/BigBFT/log"
 )
+
 // DB is general interface implemented by client to call client library
 type DB interface {
 	Init() error
 	Read(key int) (int, error)
-	Write(key int, value []byte) error
+	Write(key int, value []byte,counter int) error
 	Stop() error
 }
-
 // Bconfig holds all benchmark configuration
 type Bconfig struct {
 	T                    int     // total number of running time in seconds
@@ -45,7 +45,6 @@ type Bconfig struct {
 	// exponential distribution
 	Lambda float64 // rate parameter
 }
-
 // DefaultBConfig returns a default benchmark config
 func DefaultBConfig() Bconfig {
 	return Bconfig{
@@ -68,7 +67,6 @@ func DefaultBConfig() Bconfig {
 		Lambda:               0.01,
 	}
 }
-
 // Benchmark is benchmarking tool that generates workload and collects operation history and latency
 type Benchmark struct {
 	db DB // read/write operation interface
@@ -83,7 +81,6 @@ type Benchmark struct {
 
 	wait sync.WaitGroup // waiting for all generated keys to complete
 }
-
 // NewBenchmark returns new Benchmark object given implementation of DB interface
 func NewBenchmark(db DB) *Benchmark {
 	b := new(Benchmark)
@@ -98,7 +95,6 @@ func NewBenchmark(db DB) *Benchmark {
 	b.zipf = rand.NewZipf(r, b.ZipfianS, b.ZipfianV, uint64(b.K))
 	return b
 }
-
 // Load will create all K keys to DB
 func (b *Benchmark) Load() {
 	b.W = 1.0
@@ -130,7 +126,6 @@ func (b *Benchmark) Load() {
 	log.Infof("Throughput %f\n", float64(len(b.latency))/t.Seconds())
 	log.Info(stat)
 }
-
 // Run starts the main logic of benchmarking
 func (b *Benchmark) Run() {
 	var stop chan bool
@@ -189,7 +184,6 @@ func (b *Benchmark) Run() {
 	stat.WriteFile("latency")
 	//b.History.WriteFile("history")
 }
-
 // generates key based on distribution
 func (b *Benchmark) next() int {
 	var key int
@@ -239,6 +233,7 @@ func (b *Benchmark) worker(keys <-chan int, result chan<- time.Duration) {
 	var s time.Time
 	var e time.Time
 	//var v int
+	var counter = -1
 	var err error
 	data := make([]byte, 4)
 	for k := range keys {
@@ -247,7 +242,8 @@ func (b *Benchmark) worker(keys <-chan int, result chan<- time.Duration) {
 			//v = rand.Int()
 			//log.Debugf("value %v", data)
 			s = time.Now()
-			err = b.db.Write(k, data)
+			counter++
+			err = b.db.Write(k, data,counter)
 			e = time.Now()
 			op.input = data
 		} else {
@@ -266,7 +262,6 @@ func (b *Benchmark) worker(keys <-chan int, result chan<- time.Duration) {
 		}
 	}
 }
-
 func (b *Benchmark) collect(latencies <-chan time.Duration) {
 	for t := range latencies {
 		b.latency = append(b.latency, t)
