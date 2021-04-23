@@ -42,7 +42,6 @@ type HTTPClient struct {
 	ID      ID  // client id use the same id as servers in local site
 	N       int // total number of nodes
 	LocalN  int // number of nodes in local zone
-	Counter int
 	C 		int
 	CID 	int // command id
 	Increase map[int]ID
@@ -64,7 +63,6 @@ func NewHTTPClient(id ID) *HTTPClient {
 		Addrs:  config.Addrs,
 		HTTP:   config.HTTPAddrs,
 		Client: &http.Client{},
-		Counter: -1,
 		C	   : -1,
 		Increase: make(map[int]ID),
 	}
@@ -100,13 +98,13 @@ func (c *HTTPClient) Next(lst []ID) (ID) {
 
 //// Put puts new key value pair and return previous value (use REST)
 //// Default implementation of Client interface
-func (c *HTTPClient) Put(key Key, value Value, counter int) error {
+func (c *HTTPClient) Put(key Key, value Value, Globalcounter int) error {
 	//c.Counter++
-	log.Debugf("Counter is not there = %v", c.Counter)
+	log.Debugf("Put Function Globalcounter = %v", Globalcounter)
 	c.CID++
 	c.ID = c.Next(List)
 	log.Debugf("c.ID = %v", c.ID)
-	_, _, err := c.RESTPut(c.ID, key, value,counter)
+	_, _, err := c.RESTPut(c.ID, key, value, Globalcounter)
 	return err
 }
 
@@ -119,7 +117,7 @@ func (c *HTTPClient) GetMUL(key Key) ([]Value, []map[string]string) {
 	for id := range c.HTTP {
 		go func(id ID) {
 			c.CID++
-			v, meta, err := c.rest(id, key, nil,c.CID,c.Counter)
+			v, meta, err := c.rest(id, key, nil,c.CID,0)
 			if err != nil {
 				log.Error(err)
 				return
@@ -150,7 +148,7 @@ func (c *HTTPClient) PutMUL(key Key, value Value) []error {
 		//log.Debugf("id=%v",id)
 		go func(id ID) {
 			c.CID++
-			_, _, err := c.rest(id, key, value,c.CID,c.Counter)
+			_, _, err := c.rest(id, key, value,c.CID,0)
 			if err != nil {
 				log.Error(err)
 				return
@@ -178,7 +176,7 @@ func (c *HTTPClient) GetURL(id ID, key Key) string {
 	return c.HTTP[id] + "/" + strconv.Itoa(int(key))
 }
 // rest accesses server's REST API with url = http://ip:port/key
-func (c *HTTPClient) rest(id ID, key Key, value Value,count int,counter int) (Value, map[string]string, error) {
+func (c *HTTPClient) rest(id ID, key Key, value Value,count int, Globalcounter int) (Value, map[string]string, error) {
 	url := c.GetURL(id, key)
 	method := http.MethodGet
 	var body io.Reader
@@ -195,7 +193,7 @@ func (c *HTTPClient) rest(id ID, key Key, value Value,count int,counter int) (Va
 	}
 
 	req.Header.Set(HTTPClientID, string(id))
-	req.Header.Set(HTTPClientCounter, strconv.Itoa(counter))
+	req.Header.Set(HTTPClientCounter, strconv.Itoa(Globalcounter))
 	req.Header.Set(HTTPCommandID, strconv.Itoa(count))
 
 	rep, err := c.Client.Do(req)
@@ -210,11 +208,8 @@ func (c *HTTPClient) rest(id ID, key Key, value Value,count int,counter int) (Va
 	metadata := make(map[string]string)
 	for k := range rep.Header {
 		metadata[k] = rep.Header.Get(k)
-		//log.Debugf("meta = %v, k %v", metadata[k], k)
 	}
-	//log.Debugf("metadata=%v",metadata)
-	//log.Debugf("rep.StatusCode=%v",rep.StatusCode)
-	// if the status ok, read the body of the response.
+
 	if rep.StatusCode == http.StatusOK {
 		b, err := ioutil.ReadAll(rep.Body)
 		if err != nil {
@@ -238,7 +233,7 @@ func (c *HTTPClient) rest(id ID, key Key, value Value,count int,counter int) (Va
 
 // RESTGet issues a http call to node and return value and headers
 func (c *HTTPClient) RESTGet(id ID, key Key) (Value, map[string]string, error) {
-	return c.rest(id, key, nil,c.CID,c.Counter)
+	return c.rest(id, key, nil,c.CID,0)
 }
 
 // RESTPut puts new value as http.request body and return previous value
@@ -295,7 +290,7 @@ func (c *HTTPClient) MultiGet(n int, key Key) ([]Value, []map[string]string) {
 	i := 0
 	for id := range c.HTTP {
 		go func(id ID) {
-			v, meta, err := c.rest(id, key, nil,c.CID,c.Counter)
+			v, meta, err := c.rest(id, key, nil,c.CID,0)
 			if err != nil {
 				log.Error(err)
 				return
@@ -331,7 +326,7 @@ func (c *HTTPClient) LocalQuorumGet(key Key) ([]Value, []map[string]string) {
 			break
 		}
 		go func(id ID) {
-			v, meta, err := c.rest(id, key, nil,c.CID,c.Counter)
+			v, meta, err := c.rest(id, key, nil,c.CID,0)
 			if err != nil {
 				log.Error(err)
 				return
@@ -362,7 +357,7 @@ func (c *HTTPClient) QuorumPut(key Key, value Value) {
 		}
 		wait.Add(1)
 		go func(id ID) {
-			c.rest(id, key, value,c.CID,c.Counter)
+			c.rest(id, key, value,c.CID,0)
 			wait.Done()
 		}(id)
 	}

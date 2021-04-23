@@ -35,11 +35,12 @@ func (d *db) Read(k int) (int, error) {
 	return int(x), err
 }
 
-func (d *db) Write(k int, v []byte, counter int) error {
+func (d *db) Write(k int, v []byte, Globalcounter int) error {
 	key := BigBFT.Key(k)
 	//value := make([]byte, binary.MaxVarintLen64)
 	//binary.PutUvarint(value, uint64(v))
-	err := d.Put(key, v,counter)
+	log.Debugf("write function global counter = %v", Globalcounter)
+	err := d.Put(key, v,Globalcounter)
 	return err
 }
 

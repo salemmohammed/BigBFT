@@ -91,9 +91,9 @@ func (p *Consensus) HandlePropose(m Propose) {
 		}
 		log.Debugf("Created")
 	}
-	e := p.log[m.Slot]
-	e.commit = false
-	p.Broadcast(Vote{Ballot: m.Ballot, ID: p.ID(), Command: m.Request.Command, Slot: m.Slot})
+	//e := p.log[m.Slot]
+	//e.commit = false
+	p.Broadcast(Vote{Ballot: m.Ballot, ID: p.ID(), Request: m.Request, Slot: m.Slot})
 }
 
 func (p *Consensus) HandleVote(m Vote) {
@@ -102,9 +102,10 @@ func (p *Consensus) HandleVote(m Vote) {
 	if !exist {
 		p.log[m.Slot] = &entry{
 			ballot:  m.Ballot,
-			command: m.Command,
+			request:   &m.Request,
+			command:   m.Request.Command,
 			quorum:    BigBFT.NewQuorum(),
-			commit:  false,
+			commit:    false,
 		}
 		e = p.log[m.Slot]
 	}
@@ -112,13 +113,13 @@ func (p *Consensus) HandleVote(m Vote) {
 	e.quorum.ACK(m.ID)
 	log.Debugf("size %v", e.quorum.Size())
 	if e.quorum.Majority() {
-		e.quorum.Reset()
+		//e.quorum.Reset()
 		log.Debugf("inside majority")
-		e.command = m.Command
-		if e.commit == false{
+		e.command = m.Request.Command
+		//if e.commit == false{
 			e.commit = true
 			p.exec()
-		}
+		//}
 	}
 }
 func (p *Consensus) exec() {
@@ -144,7 +145,7 @@ func (p *Consensus) exec() {
 			if e.active{
 				e.request.Reply(reply)
 			}
-			e.request = nil
+			//e.request = nil
 		}
 		// TODO clean up the log periodically
 		//delete(p.log, p.execute)

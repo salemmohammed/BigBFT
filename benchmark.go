@@ -13,7 +13,7 @@ import (
 type DB interface {
 	Init() error
 	Read(key int) (int, error)
-	Write(key int, value []byte,counter int) error
+	Write(key int, value []byte,Globalcounter int) error
 	Stop() error
 }
 // Bconfig holds all benchmark configuration
@@ -78,13 +78,15 @@ type Benchmark struct {
 	startTime time.Time
 	zipf      *rand.Zipf
 	counter   int
-
 	wait sync.WaitGroup // waiting for all generated keys to complete
+	globalCouner int
 }
 // NewBenchmark returns new Benchmark object given implementation of DB interface
 func NewBenchmark(db DB) *Benchmark {
 	b := new(Benchmark)
 	b.db = db
+	b.counter = -1
+	b.globalCouner = -1
 	b.Bconfig = config.Benchmark
 	//b.History = NewHistory()
 	if b.Throttle > 0 {
@@ -104,16 +106,20 @@ func (b *Benchmark) Load() {
 	// Buffered Channels
 	keys := make(chan int, b.Concurrency)
 	latencies := make(chan time.Duration, 1000)
+	globalCouner := make(chan int, 0)
+
 	defer close(latencies)
 	go b.collect(latencies)
 
 	b.startTime = time.Now()
 	for i := 0; i < b.Concurrency; i++ {
-		go b.worker(keys, latencies)
+		go b.worker(keys, latencies,globalCouner)
 	}
 	for i := b.Min; i < b.Min+b.K; i++ {
 		b.wait.Add(1)
 		keys <- i
+		//b.globalCouner++
+		globalCouner <- b.globalCouner
 	}
 	t := time.Now().Sub(b.startTime)
 
@@ -140,12 +146,17 @@ func (b *Benchmark) Run() {
 	// Buffered Channels
 	keys := make(chan int, b.Concurrency)
 	latencies := make(chan time.Duration, 1000)
+
+	globalCouner := make(chan int, 10)
+
 	defer close(latencies)
 	go b.collect(latencies)
 	// number of threads or concurrency
 	for i := 0; i < b.Concurrency; i++ {
 		// this b is object calls worker function
-		go b.worker(keys, latencies)
+		go func() {
+			b.worker(keys, latencies,globalCouner)
+		}()
 	}
 
 	b.db.Init()
@@ -160,12 +171,16 @@ func (b *Benchmark) Run() {
 			default:
 				b.wait.Add(1)
 				keys <- b.next()
+				b.globalCouner++
+				globalCouner <- b.globalCouner
 			}
 		}
 	} else {
 		for i := 0; i < b.N; i++ {
 			b.wait.Add(1)
 			keys <- b.next()
+			b.globalCouner++
+			globalCouner <- b.globalCouner
 		}
 		b.wait.Wait()
 	}
@@ -173,6 +188,7 @@ func (b *Benchmark) Run() {
 
 	b.db.Stop()
 	close(keys)
+	close(globalCouner)
 	stat := Statistic(b.latency)
 	log.Infof("Concurrency = %d", b.Concurrency)
 	log.Infof("Write Ratio = %f", b.W)
@@ -229,11 +245,13 @@ func (b *Benchmark) next() int {
 	return key
 }
 // this where client do the work from benchmark
-func (b *Benchmark) worker(keys <-chan int, result chan<- time.Duration) {
+func (b *Benchmark) worker(keys <-chan int, result chan<- time.Duration, globalCouner <- chan int) {
 	var s time.Time
 	var e time.Time
 	//var v int
-	var counter = -1
+	//var counter = -1
+	//log.Debugf("counter = %v", counter)
+
 	var err error
 	data := make([]byte, 4)
 	for k := range keys {
@@ -242,8 +260,10 @@ func (b *Benchmark) worker(keys <-chan int, result chan<- time.Duration) {
 			//v = rand.Int()
 			//log.Debugf("value %v", data)
 			s = time.Now()
-			counter++
-			err = b.db.Write(k, data,counter)
+
+			//counter++
+			//slog.Debugf("globalCouner = %v", <- globalCouner)
+			err = b.db.Write(k, data,<- globalCouner)
 			e = time.Now()
 			op.input = data
 		} else {

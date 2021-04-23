@@ -26,10 +26,10 @@ func (m Propose) String() string {
 type Vote struct {
 	Ballot  BigBFT.Ballot
 	Slot    int
-	Command BigBFT.Command
+	Request BigBFT.Request
 	ID     BigBFT.ID
 }
 
 func (m Vote) String() string {
-	return fmt.Sprintf("Voted {b=%v s=%d cmd=%v id=%s}", m.Ballot, m.Slot, m.Command, m.ID)
+	return fmt.Sprintf("Voted {b=%v s=%d R=%v id=%s}", m.Ballot, m.Slot, m.Request, m.ID)
 }
