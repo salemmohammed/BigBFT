@@ -1,10 +1,8 @@
 package consensus
-
 import (
 	"github.com/salemmohammed/BigBFT"
 	"github.com/salemmohammed/BigBFT/log"
 )
-
 const (
 	HTTPHeaderSlot       = "Slot"
 	HTTPHeaderBallot     = "Ballot"
@@ -14,7 +12,6 @@ type Replica struct {
 	BigBFT.Node
 	*Consensus
 }
-
 func NewReplica(id BigBFT.ID) *Replica {
 	r := new(Replica)
 	r.Node = BigBFT.NewNode(id)
@@ -22,13 +19,9 @@ func NewReplica(id BigBFT.ID) *Replica {
 	r.Register(BigBFT.Request{}, r.handleRequest)
 	r.Register(Propose{}, r.HandlePropose)
 	r.Register(Vote{}, r.HandleVote)
-
 	//r.Register(Block{}, r.handleBlock)
-
-
 	return r
 }
-
 func (r *Replica) handleRequest(m BigBFT.Request) {
 	log.Debugf("the count is = %v ", m.Command.Counter)
 	log.Debugf("Replica %s received %v\n", r.ID(), m)
