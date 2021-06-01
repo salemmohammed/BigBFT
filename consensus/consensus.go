@@ -199,6 +199,7 @@ func (p *Consensus) HandlePropose(m Propose) {
 					L:    p.l,
 				})
 				p.l = make(map[int]*CommandBallot)
+				break loop
 			}
 		case <- timer.C:
 			flag = true
