@@ -16,14 +16,10 @@ import (
 )
 var List []ID
 var rr int = 0
-//type SafeCounter struct {
-//	mu sync.Mutex
-//	v  map[string]int
-//}
-// Client interface provides get and put for key value store
+
 type Client interface {
 	GetMUL(Key) ([]Value, []map[string]string)
-	PutMUL(Key, Value) []error
+	PutMUL(Key, Value,int) error
 	Get(Key) (Value, error)
 	Put(Key, Value,int) error
 	Next([]ID) ID
@@ -140,15 +136,16 @@ func (c *HTTPClient) GetMUL(key Key) ([]Value, []map[string]string) {
 
 // Put puts new key value pair and return previous value (use REST)
 // Default implementation of Client interface
-func (c *HTTPClient) PutMUL(key Key, value Value) []error {
+func (c *HTTPClient) PutMUL(key Key, value Value,Globalcounter int) error {
 	log.Debugf("<----------------PutMUL---------------->")
 	i := 0
+	log.Debugf("Put Function Globalcounter = %v", Globalcounter)
 	errs := make(chan error,len(c.HTTP))
 	for id := range c.HTTP {
 		//log.Debugf("id=%v",id)
 		go func(id ID) {
 			c.CID++
-			_, _, err := c.rest(id, key, value,c.CID,0)
+			_, _, err := c.rest(id, key, value,c.CID,Globalcounter)
 			if err != nil {
 				log.Error(err)
 				return
@@ -162,7 +159,7 @@ func (c *HTTPClient) PutMUL(key Key, value Value) []error {
 		errors = append(errors, <-errs)
 	}
 	//log.Debugf("errors %v ", errors)
-	return errors
+	return errors[0]
 }
 
 func (c *HTTPClient) GetURL(id ID, key Key) string {

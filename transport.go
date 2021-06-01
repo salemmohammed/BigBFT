@@ -12,9 +12,7 @@ import (
 
 	"github.com/salemmohammed/BigBFT/log"
 )
-
 var scheme = flag.String("transport", "tcp", "transport scheme (tcp, udp, chan), default tcp")
-
 // Transport = transport + pipe + client + server
 type Transport interface {
 	// Scheme returns tranport scheme
@@ -35,7 +33,6 @@ type Transport interface {
 	// Close closes send channel and stops listener
 	Close()
 }
-
 // NewTransport creates new transport object with url
 func NewTransport(addr string) Transport {
 	if !strings.Contains(addr, "://") {

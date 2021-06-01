@@ -19,11 +19,10 @@ func NewReplica(id BigBFT.ID) *Replica {
 	r.Register(BigBFT.Request{}, r.handleRequest)
 	r.Register(Propose{}, r.HandlePropose)
 	r.Register(Vote{}, r.HandleVote)
-	//r.Register(Block{}, r.handleBlock)
 	return r
 }
 func (r *Replica) handleRequest(m BigBFT.Request) {
-	log.Debugf("the count is = %v ", m.Command.Counter)
-	log.Debugf("Replica %s received %v\n", r.ID(), m)
+	log.Debugf("The Current slot is %v", m.Command.Counter)
+	log.Debugf("Replica %s received %v", r.ID(), m)
 	r.Consensus.HandleRequest(m)
 }

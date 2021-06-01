@@ -12,7 +12,6 @@ import (
 // DB is general interface implemented by client to call client library
 type DB interface {
 	Init() error
-	Read(key int) (int, error)
 	Write(key int, value []byte,Globalcounter int) error
 	Stop() error
 }
@@ -147,10 +146,11 @@ func (b *Benchmark) Run() {
 	keys := make(chan int, b.Concurrency)
 	latencies := make(chan time.Duration, 1000)
 
-	globalCouner := make(chan int, 10)
+	globalCouner := make(chan int, 1000)
 
 	defer close(latencies)
 	go b.collect(latencies)
+
 	// number of threads or concurrency
 	for i := 0; i < b.Concurrency; i++ {
 		// this b is object calls worker function
@@ -158,7 +158,6 @@ func (b *Benchmark) Run() {
 			b.worker(keys, latencies,globalCouner)
 		}()
 	}
-
 	b.db.Init()
 	b.startTime = time.Now()
 	if b.T > 0 {
@@ -189,6 +188,7 @@ func (b *Benchmark) Run() {
 	b.db.Stop()
 	close(keys)
 	close(globalCouner)
+	log.Debugf("--------------------done -------------2")
 	stat := Statistic(b.latency)
 	log.Infof("Concurrency = %d", b.Concurrency)
 	log.Infof("Write Ratio = %f", b.W)
@@ -257,18 +257,12 @@ func (b *Benchmark) worker(keys <-chan int, result chan<- time.Duration, globalC
 	for k := range keys {
 		op := new(operation)
 		if rand.Float64() < b.W {
-			//v = rand.Int()
-			//log.Debugf("value %v", data)
 			s = time.Now()
-
-			//counter++
-			//slog.Debugf("globalCouner = %v", <- globalCouner)
 			err = b.db.Write(k, data,<- globalCouner)
 			e = time.Now()
 			op.input = data
 		} else {
 			s = time.Now()
-			//v, err = b.db.Read(k)
 			e = time.Now()
 			op.output = data
 		}

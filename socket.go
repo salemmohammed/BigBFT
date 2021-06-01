@@ -65,7 +65,7 @@ func NewSocket(id ID, addrs map[ID]string) Socket {
 }
 
 func (s *socket) Send(to ID, m interface{}) {
-	log.Debugf("node %s send message %+v to %v", s.id, m, to)
+
 
 	if s.crash {
 		return
@@ -110,16 +110,19 @@ func (s *socket) Send(to ID, m interface{}) {
 		}()
 		return
 	}
-
+	log.Debugf("node %s send message %+v to %v", s.id, m, to)
 	t.Send(m)
 }
 
 func (s *socket) Recv() interface{} {
+	//log.Debugf("socket receive")
 	s.lock.RLock()
+	//log.Debugf("s.id = %v", s.id)
 	t := s.nodes[s.id]
 	s.lock.RUnlock()
 	for {
 		m := t.Recv()
+		//log.Debugf("Receive %v", m)
 		if !s.crash {
 			return m
 		}
@@ -142,9 +145,9 @@ func (s *socket) MulticastQuorum(quorum int, m interface{}) {
 	//log.Debugf("node %s multicasting message %+v for %d nodes", s.id, m, quorum)
 	i := 0
 	for id := range s.addresses {
-		if id == s.id {
-			continue
-		}
+		//if id == s.id {
+		//	continue
+		//}
 		s.Send(id, m)
 		i++
 		if i == quorum {

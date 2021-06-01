@@ -50,7 +50,6 @@ func (n *node) ID() ID {
 }
 
 func (n *node) Retry(r Request) {
-	log.Debugf("node %v retry reqeust %v", n.id, r)
 	n.MessageChan <- r
 }
 
@@ -77,6 +76,7 @@ func (n *node) Run() {
 // recv receives messages from socket and pass to message channel
 func (n *node) recv() {
 	for {
+
 		//log.Debugf("recv receives messages from socket and pass to message channel")
 		m := n.Recv()
 		switch m := m.(type) {
@@ -102,7 +102,7 @@ func (n *node) recv() {
 
 // handle receives messages from message channel and calls handle function using refection
 func (n *node) handle() {
-	log.Debugf("salem in handle")
+	//log.Debugf("handle")
 	for {
 		msg := <-n.MessageChan
 		v := reflect.ValueOf(msg)
