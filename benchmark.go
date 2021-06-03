@@ -25,7 +25,6 @@ type Bconfig struct {
 	Concurrency          int     // number of simulated clients
 	Distribution         string  // distribution
 	LinearizabilityCheck bool    // run linearizability checker at the end of benchmark
-	// rounds       int    // repeat in many rounds sequentially
 
 	// conflict distribution
 	Conflicts int // percentage of conflicting keys
@@ -50,7 +49,7 @@ func DefaultBConfig() Bconfig {
 		T:                    60,
 		N:                    0,
 		K:                    1000,
-		W:                    0.5,
+		W:                    1,
 		Throttle:             0,
 		Concurrency:          1,
 		Distribution:         "uniform",
@@ -142,11 +141,10 @@ func (b *Benchmark) Run() {
 	}
 
 	b.latency = make([]time.Duration, 0)
-	// Buffered Channels
 	keys := make(chan int, b.Concurrency)
 	latencies := make(chan time.Duration, 1000)
 
-	globalCouner := make(chan int, 1000)
+	globalCouner := make(chan int, 0)
 
 	defer close(latencies)
 	go b.collect(latencies)
@@ -155,7 +153,7 @@ func (b *Benchmark) Run() {
 	for i := 0; i < b.Concurrency; i++ {
 		// this b is object calls worker function
 		go func() {
-			b.worker(keys, latencies,globalCouner)
+			b.worker(keys,latencies,globalCouner)
 		}()
 	}
 	b.db.Init()
@@ -248,10 +246,6 @@ func (b *Benchmark) next() int {
 func (b *Benchmark) worker(keys <-chan int, result chan<- time.Duration, globalCouner <- chan int) {
 	var s time.Time
 	var e time.Time
-	//var v int
-	//var counter = -1
-	//log.Debugf("counter = %v", counter)
-
 	var err error
 	data := make([]byte, 4)
 	for k := range keys {
@@ -281,4 +275,5 @@ func (b *Benchmark) collect(latencies <-chan time.Duration) {
 		b.latency = append(b.latency, t)
 		b.wait.Done()
 	}
+	log.Debugf("time = %v", b.latency)
 }

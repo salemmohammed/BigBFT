@@ -33,6 +33,7 @@ type Consensus struct {
 	Flag	   bool
 	count      int
 	Counter    int
+	flag2      int
 
 	Member       *BigBFT.Memberlist
 }
@@ -50,6 +51,7 @@ func NewConsensus(n BigBFT.Node, options ...func(*Consensus)) *Consensus {
 		Flag:			false,
 		count:          -1,
 		Counter:		-1,
+		flag2:           0,
 	}
 	for _, opt := range options {
 		opt(p)
@@ -109,8 +111,8 @@ func (p *Consensus) Propose(r *BigBFT.Request) {
 func (p *Consensus) HandlePropose(m Propose) {
 	log.Debugf("HandlePropose = %v", m.Slot)
 	log.Debugf("------HandlePropose------")
-	startTime := time.Now()
-	log.Debugf("------startTime------ = %v", startTime)
+	//startTime := time.Now()
+	//log.Debugf("------startTime------ = %v", startTime)
 	if p.ballot < m.Ballot {
 		p.ballot = m.Ballot
 	}
@@ -130,7 +132,6 @@ func (p *Consensus) HandlePropose(m Propose) {
 		p.count++
 		log.Debugf("%v Slot is created", m.Slot)
 	}
-	//e = p.log[m.Slot]
 
 	log.Debugf("p.count = %v", p.count)
 	log.Debugf("p.slot = %v", p.slot)
@@ -152,66 +153,48 @@ func (p *Consensus) HandlePropose(m Propose) {
 	p.Member.Addmember(m.ID)
 	log.Debugf("Nighbors %v", p.Member.Neibors)
 
-	if p.count >= t || len(p.l) >= e.quorum.Total() - 1{
+
+	if p.count >= t || len(p.l) >= e.quorum.Total() - 1 {
 		for ss , _ := range p.log {
 			e := p.log[ss]
 			log.Debugf("ss =  %v", ss)
 			e.Voted= true
+			if ss > p.flag2{
+				p.flag2 = ss
+			}
 		}
 	}
 
-	//e = p.log[m.Slot]
-	//if (p.count >= t || len(p.l) >= e.quorum.Total() - 1)  && p.Member.Size() == p.Member.ClientSize()-2{
-	//	log.Debugf("conditions")
-	//	p.Broadcast(Vote{
-	//		Slot: m.Slot,
-	//		Id:   p.ID(),
-	//		L:    p.l,
-	//	})
-	//	p.l = make(map[int]*CommandBallot)
-	//	p.Member.Reset()
-	//}
+	flag := false
+	if m.Slot < p.flag2 {
+		log.Debugf("m.Slot < flag2 = %v", m.Slot < p.flag2)
+		flag = true
+	}
 
-	c1 := make(chan Vote)
+	log.Debugf("m.Slot < flag2 = %v", m.Slot < p.flag2)
+	e = p.log[m.Slot]
 
-	go func() {
-		//time.Sleep(1 * time.Second)
-		c1 <- Vote{
+	if p.count >= t || len(p.l) >= e.quorum.Total() - 1  || p.Member.Size() == 3 {
+		p.Member.Reset()
+		log.Debugf("conditions")
+		p.Broadcast(Vote{
 			Slot: m.Slot,
 			Id:   p.ID(),
 			L:    p.l,
-		}
-	}()
-
-	timer := time.NewTimer(10*time.Millisecond)
-	flag := false
-	loop:
-	for{
-		select {
-		case m := <- c1:
-			e := p.log[m.Slot]
-			if p.count >= t || len(m.L) >= e.quorum.Total() - 1  || p.Member.Size() == 3{
-				p.Member.Reset()
-				log.Debugf("conditions")
-				p.Broadcast(Vote{
-					Slot: m.Slot,
-					Id:   p.ID(),
-					L:    p.l,
-				})
-				p.l = make(map[int]*CommandBallot)
-				break loop
-			}
-		case <- timer.C:
-			flag = true
-			log.Debugf("time.After")
-			break loop
-		}
+		})
+		p.l = make(map[int]*CommandBallot)
 	}
 
-
-
-	if len(p.l) >= e.quorum.Total()/2 && flag == true && p.Member.Size() >= e.quorum.Total()/2{
+	if (len(p.l) >= e.quorum.Total()/2 && p.Member.Size() >= e.quorum.Total()/2) || flag==true {
 		p.Member.Reset()
+		for ss , _ := range p.log {
+			e := p.log[ss]
+			log.Debugf("ss =  %v", ss)
+			e.Voted= true
+			if ss > p.flag2{
+				p.flag2 = ss
+			}
+		}
 		log.Debugf("p.count >= t || len(p.l) >= e.quorum.Total() - 2 = %v ", e.quorum.Total()-2)
 		log.Debugf("p.count >= t || len(p.l) >= e.quorum.Total()/2 = %v ", e.quorum.Total()/2)
 		p.Broadcast(Vote{
@@ -255,7 +238,6 @@ func (p *Consensus) HandleVote(m Vote) {
 		log.Debugf("e  =%v",e.quorum.Size() )
 		if e.quorum.Size() == e.quorum.Total() - 1 {
 			e.Voted = true
-			//e.quorum.Reset()
 		}
 	}
 	//mutex.Unlock()
