@@ -76,7 +76,7 @@ func (p *Consensus) Propose(r *BigBFT.Request) {
 		quorum:    BigBFT.NewQuorum(),
 		commit:    false,
 		received:  false,
-		Voted:	   false,
+		Voted:	   true,
 		leader:    true,
 	}
 
@@ -239,7 +239,7 @@ func (p *Consensus) HandleVote(m Vote) {
 		e.commit = true
 		e.quorum.ACK(sc.Id)
 		log.Debugf("e  =%v",e.quorum.Size() )
-		if e.quorum.Size() == e.quorum.Total() - 1 {
+		if e.quorum.Size() == e.quorum.Size() - 1 {
 			e.Voted = true
 		}
 	}
