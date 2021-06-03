@@ -136,10 +136,10 @@ func (p *Consensus) HandlePropose(m Propose) {
 	log.Debugf("p.count = %v", p.count)
 	log.Debugf("p.slot = %v", p.slot)
 
-	mutex.Lock()
+	//mutex.Lock()
 	p.l[m.Slot] = &CommandBallot{m.Request.Command,m.Slot, p.ID()}
 	log.Debugf("p.l[%v] created = %v", m.Slot, p.l[m.Slot].Command)
-	mutex.Unlock()
+	//mutex.Unlock()
 
 
 	e := p.log[m.Slot]
@@ -277,9 +277,9 @@ func (p *Consensus) exec() {
 			}
 		}
 		delete(p.log,p.execute)
-		mutex.Lock()
+		//mutex.Lock()
 		delete(p.l,p.execute)
-		mutex.Unlock()
+		//mutex.Unlock()
 		p.execute++
 		log.Debugf("Done")
 	}
