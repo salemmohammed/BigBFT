@@ -91,7 +91,7 @@ func (p *Consensus) Propose(r *BigBFT.Request) {
 	p.Broadcast(Propose{Ballot: p.ballot, Request: *r, Slot:p.slot, ID: p.ID()})
 
 	log.Debugf("-------------------------------------------------------")
-	t := p.execute + 3
+	t := p.execute + (p.log[p.slot].quorum.Total() - 1)
 	log.Debugf("t %v", t)
 	log.Debugf("p.count %v", p.count)
 
@@ -174,7 +174,7 @@ func (p *Consensus) HandlePropose(m Propose) {
 	log.Debugf("m.Slot < flag2 = %v", m.Slot < p.flag2)
 	e = p.log[m.Slot]
 
-	if p.count >= t || len(p.l) >= e.quorum.Total() - 1  || p.Member.Size() == 3 {
+	if p.count >= t || len(p.l) >= e.quorum.Total() - 1  || p.Member.Size() == (e.quorum.Total() - 1) {
 		p.Member.Reset()
 		log.Debugf("conditions")
 		p.Broadcast(Vote{
@@ -185,7 +185,7 @@ func (p *Consensus) HandlePropose(m Propose) {
 		p.l = make(map[int]*CommandBallot)
 	}
 
-	if (len(p.l) >= e.quorum.Total()/2 && p.Member.Size() >= e.quorum.Total()/2) || flag==true {
+	if (len(p.l) >= e.quorum.Total()/2 ) || flag==true {
 		p.Member.Reset()
 		for ss , _ := range p.log {
 			e := p.log[ss]
