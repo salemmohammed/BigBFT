@@ -1,2 +1,2 @@
 # BigBFT
-BigBFT is the under construction.
+BigBFT is under the construction.
