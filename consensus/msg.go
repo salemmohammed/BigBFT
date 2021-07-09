@@ -14,12 +14,14 @@ func init() {
 type Propose struct {
 	Ballot  BigBFT.Ballot
 	Request BigBFT.Request
+	Command BigBFT.Command
 	Slot    int
 	ID      BigBFT.ID
+	Leader  bool
 }
 
 func (m Propose) String() string {
-	return fmt.Sprintf("Propose {b=%v request=%v slot=%v}", m.Ballot, m.Request, m.Slot)
+	return fmt.Sprintf("Propose {b=%v Command=%v slot=%v Leader=%v}", m.Ballot, m.Command, m.Slot, m.Leader)
 }
 
 type Vote struct {
