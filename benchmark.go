@@ -65,7 +65,7 @@ func DefaultBConfig() Bconfig {
 		ZipfianS:             2,
 		ZipfianV:             1,
 		Lambda:               0.01,
-		Size:				  512,
+		Size:				  256,
 	}
 }
 // Benchmark is benchmarking tool that generates workload and collects operation history and latency
