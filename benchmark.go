@@ -42,6 +42,8 @@ type Bconfig struct {
 
 	// exponential distribution
 	Lambda float64 // rate parameter
+
+	Size int // payload size
 }
 // DefaultBConfig returns a default benchmark config
 func DefaultBConfig() Bconfig {
@@ -63,6 +65,7 @@ func DefaultBConfig() Bconfig {
 		ZipfianS:             2,
 		ZipfianV:             1,
 		Lambda:               0.01,
+		Size:				  2048,
 	}
 }
 // Benchmark is benchmarking tool that generates workload and collects operation history and latency
@@ -247,18 +250,20 @@ func (b *Benchmark) worker(keys <-chan int, result chan<- time.Duration, globalC
 	var s time.Time
 	var e time.Time
 	var err error
-	data := make([]byte, 4)
+	var v []byte
+	//data := make([]byte, 4)
 	for k := range keys {
 		op := new(operation)
 		if rand.Float64() < b.W {
+			v = GenerateRandVal(b.Bconfig.Size)
 			s = time.Now()
-			err = b.db.Write(k, data,<- globalCouner)
+			err = b.db.Write(k, v,<- globalCouner)
 			e = time.Now()
-			op.input = data
+			op.input = v
 		} else {
 			s = time.Now()
 			e = time.Now()
-			op.output = data
+			op.output = v
 		}
 		op.start = s.Sub(b.startTime).Nanoseconds()
 		if err == nil {
